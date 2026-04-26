@@ -8,6 +8,8 @@ const SCOPES = [
 const FOLDER_NAME = 'ShopList';
 const LS_PERSONAL = 'shoplist_personal_id';
 const LS_GROUPS   = 'shoplist_groups';
+const LS_TOKEN = 'shoplist_auth_token';
+const LS_TOKEN_EXPIRY = 'shoplist_auth_expiry';
 const DRIVE  = 'https://www.googleapis.com/drive/v3/files';
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
 
@@ -31,8 +33,21 @@ export async function init() {
   _client = window.google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
     scope: SCOPES,
-    callback: () => {},
+    callback: (response) => {
+      _token = response.access_token;
+      _tokenExpiry = Date.now() + (response.expires_in * 1000);
+      localStorage.setItem(LS_TOKEN, _token);
+      localStorage.setItem(LS_TOKEN_EXPIRY, _tokenExpiry);
+    },
   });
+  
+  // Restore token from localStorage if valid
+  const saved = localStorage.getItem(LS_TOKEN);
+  const expiry = Number(localStorage.getItem(LS_TOKEN_EXPIRY)) || 0;
+  if (saved && Date.now() < expiry) {
+    _token = saved;
+    _tokenExpiry = expiry;
+  }
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -52,7 +67,11 @@ function requestToken(prompt) {
 export const signIn = () => requestToken('select_account');
 
 export function signOut() {
-  if (_token) window.google.accounts.oauth2.revoke(_token, () => {});
+  if (_token) {
+    google.accounts.id.revoke(_token);
+    localStorage.removeItem(LS_TOKEN);
+    localStorage.removeItem(LS_TOKEN_EXPIRY);
+  }
   _token = null;
   _tokenExpiry = 0;
 }
