@@ -547,30 +547,31 @@ export default function App() {
   }
 
   async function handleJoinGroup(code, localName) {
-    if (!code.trim() || !localName.trim()) return;
-    setGroupLoading(true);
-    setGroupError(null);
-    try {
-      const data = await Drive.joinGroup(code.trim());
-      const newGroup = { name: localName.trim(), fileId: code.trim() };
-      const updated = [...groups, newGroup];
-      setGroups(updated);
-      groupsRef.current = updated;
-      Drive.persistGroups(updated);
-      const newIdx = updated.length - 1;
-      setShowGroupManage(false);
-      setMode('shared');
-      modeRef.current = 'shared';
-      setActiveGroupIdx(newIdx);
-      activeGroupIdxRef.current = newIdx;
-      applyLists(data.lists || []);
-      showToast(`Joined "${localName.trim()}"!`);
-    } catch (e) {
-      setGroupError(e.message);
-    } finally {
-      setGroupLoading(false);
-    }
+  if (!code.trim() || !localName.trim()) return;
+  setGroupLoading(true);
+  setGroupError(null);
+  try {
+    const data = await Drive.joinGroup(code.trim());
+    // data now contains the shared file's lists
+    const newGroup = { name: localName.trim(), fileId: code.trim() };
+    const updated = [...groups, newGroup];
+    setGroups(updated);
+    groupsRef.current = updated;
+    Drive.persistGroups(updated);
+    const newIdx = updated.length - 1;
+    setShowGroupManage(false);
+    setMode('shared');
+    modeRef.current = 'shared';
+    setActiveGroupIdx(newIdx);
+    activeGroupIdxRef.current = newIdx;
+    applyLists(data.lists || []); // Use the shared file's lists
+    showToast(`Joined "${localName.trim()}"!`);
+  } catch (e) {
+    setGroupError(e.message);
+  } finally {
+    setGroupLoading(false);
   }
+}
 
   function handleLeaveGroup() {
     const group = groups[activeGroupIdx];
