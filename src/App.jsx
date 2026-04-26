@@ -373,8 +373,30 @@ export default function App() {
   const savingRef  = useRef(false);
 
   useEffect(() => {
-    Drive.init().then(() => setReady(true)).catch(() => {});
-    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+    (async () => {
+      try {
+        await Drive.init();
+        
+        // Check if token was restored
+        const saved = localStorage.getItem('shoplist_auth_token');
+        const expiry = Number(localStorage.getItem('shoplist_auth_expiry')) || 0;
+        
+        if (saved && Date.now() < expiry) {
+          // Token exists and is valid — go straight to main
+          const user = await Drive.getUserInfo();
+          setUser(user);
+          setAppScreen('main');
+          const groups = Drive.getStoredGroups();
+          setGroups(groups);
+          if (groups.length > 0) setMode('shared');
+          else await Drive.ensurePersonalFile();
+        }
+      } catch (e) {
+        console.error('Init failed:', e);
+      } finally {
+        setReady(true);
+      }
+    })();
   }, []);
 
   // ── Keep refs in sync ─────────────────────────────────────────────────────
