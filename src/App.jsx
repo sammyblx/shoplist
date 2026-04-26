@@ -59,7 +59,7 @@ function buildMissingElsewhereData(currentList, allLists) {
   return { coveredElsewhere, neededElsewhere, uniqueToThis };
 }
 
-// ── Section (collapsible card) ────────────────────────────────────────────────
+// ── Section ───────────────────────────────────────────────────────────────────
 function Section({ title, subtitle, color, bg, border, count, expanded, onToggle, children }) {
   return (
     <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #e5e7eb', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
@@ -105,9 +105,7 @@ function CrossItem({ item, matches, onToggle }) {
             ))}
           </div>
         )}
-        {matches.length === 0 && (
-          <div style={{ fontSize: 11, color: '#93c5fd', marginTop: 4 }}>Only in this list</div>
-        )}
+        {matches.length === 0 && <div style={{ fontSize: 11, color: '#93c5fd', marginTop: 4 }}>Only in this list</div>}
       </div>
     </div>
   );
@@ -130,7 +128,7 @@ function LoginScreen({ onSignIn, loading, error, ready }) {
           <div style={{ fontSize: 52, marginBottom: 16 }}>🛒</div>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111827', margin: '0 0 10px', letterSpacing: '-0.5px' }}>ShopList</h1>
           <p style={{ fontSize: 15, color: '#6b7280', margin: '0 0 30px', lineHeight: 1.6 }}>
-            Multiple shopping lists,<br />synced to your Google Drive.
+            Shared shopping lists for the whole family,<br />synced through Google Drive.
           </p>
           {error && (
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#dc2626', textAlign: 'left' }}>
@@ -142,9 +140,7 @@ function LoginScreen({ onSignIn, loading, error, ready }) {
             disabled={loading || !ready}
             style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '13px 20px', background: loading || !ready ? '#f9fafb' : '#fff', border: '1.5px solid #e5e7eb', borderRadius: 12, fontSize: 15, fontWeight: 600, color: loading || !ready ? '#9ca3af' : '#111827', cursor: loading || !ready ? 'not-allowed' : 'pointer', transition: 'all .15s', fontFamily: "'DM Sans','Segoe UI',sans-serif" }}
           >
-            {loading ? (
-              <span>Signing in…</span>
-            ) : (
+            {loading ? <span>Signing in…</span> : (
               <>
                 <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -158,7 +154,7 @@ function LoginScreen({ onSignIn, loading, error, ready }) {
           </button>
           {!ready && <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 12 }}>Loading Google Sign-In…</p>}
           <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 20, lineHeight: 1.6 }}>
-            Your data is stored privately in your own Google Drive appdata folder. No backend servers.
+            Data stored in your Google Drive. No backend servers.
           </p>
         </div>
       </div>
@@ -166,8 +162,197 @@ function LoginScreen({ onSignIn, loading, error, ready }) {
   );
 }
 
+// ── SetupScreen ───────────────────────────────────────────────────────────────
+function SetupScreen({ onCreate, onJoin, loading, error, user, onSignOut }) {
+  const [mode, setMode] = useState(null); // null | 'join'
+  const [code, setCode] = useState('');
+
+  return (
+    <div style={{ fontFamily: "'DM Sans','Segoe UI',sans-serif", minHeight: '100vh', background: '#f0f2f5', display: 'flex', flexDirection: 'column' }}>
+      <header style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '0 20px', height: 58, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontWeight: 700, fontSize: 18, color: '#111827', letterSpacing: '-0.5px' }}>🛒 ShopList</span>
+        <button onClick={onSignOut} style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 12px', fontSize: 13, color: '#6b7280', cursor: 'pointer', fontFamily: 'inherit' }}>
+          Sign out
+        </button>
+      </header>
+
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div style={{ maxWidth: 440, width: '100%' }}>
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div style={{ fontSize: 44, marginBottom: 10 }}>👨‍👩‍👧‍👦</div>
+            <h1 style={{ fontSize: 24, fontWeight: 700, color: '#111827', margin: '0 0 8px', letterSpacing: '-0.5px' }}>Set up your family list</h1>
+            <p style={{ fontSize: 14, color: '#6b7280', margin: 0, lineHeight: 1.6 }}>
+              {user?.name ? `Welcome, ${user.name.split(' ')[0]}! ` : ''}
+              Create a new shared list or join one with a family code.
+            </p>
+          </div>
+
+          {error && (
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#dc2626' }}>
+              {error}
+            </div>
+          )}
+
+          {/* Create card */}
+          <div style={{ background: '#fff', borderRadius: 16, padding: '22px 24px', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>✨</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>Create new family list</div>
+                <div style={{ fontSize: 13, color: '#6b7280' }}>Start fresh and share the code with family</div>
+              </div>
+            </div>
+            <button
+              onClick={onCreate}
+              disabled={loading}
+              style={{ width: '100%', background: '#111827', color: '#fff', border: 'none', borderRadius: 12, padding: '12px 0', fontWeight: 600, fontSize: 15, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, fontFamily: 'inherit' }}
+            >
+              {loading && mode === null ? 'Creating…' : 'Create Family List'}
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0' }}>
+            <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
+            <span style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>or</span>
+            <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
+          </div>
+
+          {/* Join card */}
+          <div style={{ background: '#fff', borderRadius: 16, padding: '22px 24px', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>🔗</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>Join existing family</div>
+                <div style={{ fontSize: 13, color: '#6b7280' }}>Enter the join code from a family member</div>
+              </div>
+            </div>
+
+            {mode === 'join' ? (
+              <>
+                <textarea
+                  autoFocus
+                  value={code}
+                  onChange={e => setCode(e.target.value)}
+                  placeholder="Paste the full join code here…"
+                  rows={3}
+                  style={{ width: '100%', border: '1.5px solid #d1d5db', borderRadius: 10, padding: '10px 12px', fontSize: 13, fontFamily: "'DM Mono',monospace", resize: 'none', outline: 'none', boxSizing: 'border-box', marginBottom: 10, lineHeight: 1.5 }}
+                />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => onJoin(code.trim())}
+                    disabled={loading || !code.trim()}
+                    style={{ flex: 1, background: '#111827', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 0', fontWeight: 600, fontSize: 14, cursor: loading || !code.trim() ? 'not-allowed' : 'pointer', opacity: loading || !code.trim() ? 0.6 : 1, fontFamily: 'inherit' }}
+                  >
+                    {loading && mode === 'join' ? 'Joining…' : 'Join →'}
+                  </button>
+                  <button
+                    onClick={() => { setMode(null); setCode(''); }}
+                    style={{ flex: 1, background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, padding: '11px 0', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                onClick={() => setMode('join')}
+                style={{ width: '100%', background: '#eff6ff', color: '#1d4ed8', border: '1.5px solid #bfdbfe', borderRadius: 12, padding: '12px 0', fontWeight: 600, fontSize: 15, cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Enter family code
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── FamilyCodeModal ───────────────────────────────────────────────────────────
+function FamilyCodeModal({ fileId, onClose, onLeave, showToast }) {
+  const shortCode = Drive.getShortCode(fileId);
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(fileId);
+      setCopied(true);
+      showToast('Join code copied!');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      showToast('Could not copy — select and copy manually.', 'error');
+    }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: '#fff', borderRadius: 20, padding: '32px 28px', maxWidth: 420, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>👨‍👩‍👧‍👦</div>
+          <h2 style={{ margin: '0 0 6px', fontSize: 22, fontWeight: 700, color: '#111827', letterSpacing: '-0.3px' }}>Family Code</h2>
+          <p style={{ margin: 0, fontSize: 14, color: '#6b7280', lineHeight: 1.5 }}>
+            Share this code so family members can join your list
+          </p>
+        </div>
+
+        {/* Short code display */}
+        <div style={{ background: '#f0fdf4', border: '2px solid #bbf7d0', borderRadius: 14, padding: '18px 20px', textAlign: 'center', marginBottom: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Your family code</div>
+          <div style={{ fontSize: 38, fontWeight: 700, color: '#111827', letterSpacing: 8, fontFamily: "'DM Mono',monospace" }}>
+            {shortCode}
+          </div>
+          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 8 }}>First 8 characters — for identification</div>
+        </div>
+
+        {/* Full ID — tap to copy on mobile */}
+        <div
+          onClick={copy}
+          title="Tap to copy"
+          style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: '12px 14px', marginBottom: 16, cursor: 'pointer', transition: 'background .15s' }}
+          onMouseEnter={e => e.currentTarget.style.background = '#f3f4f6'}
+          onMouseLeave={e => e.currentTarget.style.background = '#f9fafb'}
+        >
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Full join code (tap to copy)</div>
+          <div style={{ fontSize: 12, color: '#374151', fontFamily: "'DM Mono',monospace", wordBreak: 'break-all', lineHeight: 1.6 }}>
+            {fileId}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+          <button
+            onClick={copy}
+            style={{ flex: 1, background: copied ? '#22c55e' : '#111827', color: '#fff', border: 'none', borderRadius: 12, padding: '12px 0', fontWeight: 600, fontSize: 15, cursor: 'pointer', fontFamily: 'inherit', transition: 'background .2s' }}
+          >
+            {copied ? '✓ Copied!' : '📋 Copy Code'}
+          </button>
+          <button
+            onClick={onClose}
+            style={{ flex: 1, background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 12, padding: '12px 0', fontWeight: 600, fontSize: 15, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            Done
+          </button>
+        </div>
+
+        <button
+          onClick={onLeave}
+          style={{ width: '100%', background: 'none', border: 'none', color: '#9ca3af', fontSize: 13, cursor: 'pointer', padding: 4, fontFamily: 'inherit' }}
+        >
+          Leave this family list
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
+  // ── Screen state ─────────────────────────────────────────────────────────
+  // 'login' | 'setup' | 'main'
+  const [appScreen, setAppScreen] = useState('login');
+
+  // ── List / item state ─────────────────────────────────────────────────────
   const [lists, setLists] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -182,32 +367,57 @@ export default function App() {
   const [editingItem, setEditingItem] = useState(null);
   const [missingExpanded, setMissingExpanded] = useState({ coveredElsewhere: true, neededElsewhere: true, uniqueToThis: false });
 
-  // Drive / auth state
+  // ── Drive / auth state ────────────────────────────────────────────────────
   const [user, setUser] = useState(null);
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [fileId, setFileId] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState(null);
+  const [setupLoading, setSetupLoading] = useState(false);
+  const [setupError, setSetupError] = useState(null);
   const [ready, setReady] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showFamilyCode, setShowFamilyCode] = useState(false);
   const saveTimer = useRef(null);
+  const savingRef = useRef(false);  // for polling guard
 
   useEffect(() => {
     Drive.init().then(() => setReady(true)).catch(() => {});
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, []);
 
-  // Debounced save to Drive
+  // ── Polling + focus refetch ────────────────────────────────────────────────
+  useEffect(() => {
+    if (appScreen !== 'main') return;
+
+    const fetchLatest = async () => {
+      if (savingRef.current) return; // don't overwrite pending writes
+      try {
+        const fresh = await Drive.loadData();
+        setLists(fresh.lists || []);
+      } catch { /* silent — user may be offline */ }
+    };
+
+    const interval = setInterval(fetchLatest, 30_000);
+    window.addEventListener('focus', fetchLatest);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', fetchLatest);
+    };
+  }, [appScreen]);
+
+  // ── Debounced save ────────────────────────────────────────────────────────
   const scheduleSave = useCallback((nextLists) => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
+      savingRef.current = true;
       setSaving(true);
       try { await Drive.saveData({ lists: nextLists }); }
       catch { showToast('Auto-save failed', 'error'); }
-      finally { setSaving(false); }
+      finally { setSaving(false); savingRef.current = false; }
     }, 1500);
   }, []);
 
-  // Wrapper: mutate lists array and schedule a Drive save
+  // Optimistic update: apply locally then schedule Drive write
   const updateLists = useCallback((fn) => {
     setLists(prev => {
       const next = fn(prev);
@@ -216,24 +426,39 @@ export default function App() {
     });
   }, [scheduleSave]);
 
+  // ── Data helpers ──────────────────────────────────────────────────────────
+  function applyLoadedData(data, id) {
+    const allLists = data.lists || [];
+    const oldLists = allLists.filter(l => isOlderThan2Months(l.createdAt));
+    const pruned   = allLists.filter(l => !isOlderThan2Months(l.createdAt));
+    setLists(pruned);
+    setActiveId(pruned[0]?.id ?? null);
+    setFileId(id);
+    if (oldLists.length > 0) {
+      setAutoDeleted(oldLists.map(l => l.name));
+      setShowDeletedBanner(true);
+      Drive.saveData({ lists: pruned }).catch(() => {});
+    }
+  }
+
   // ── Auth ──────────────────────────────────────────────────────────────────
   async function handleSignIn() {
     setAuthLoading(true);
     setAuthError(null);
     try {
       await Drive.signIn();
-      const [data, userInfo] = await Promise.all([Drive.loadData(), Drive.getUserInfo()]);
-      const allLists = data.lists || [];
-      const oldLists = allLists.filter(l => isOlderThan2Months(l.createdAt));
-      const prunedLists = allLists.filter(l => !isOlderThan2Months(l.createdAt));
-      setLists(prunedLists);
-      setActiveId(prunedLists[0]?.id ?? null);
+      const userInfo = await Drive.getUserInfo();
       setUser(userInfo);
-      setLoggedIn(true);
-      if (oldLists.length > 0) {
-        setAutoDeleted(oldLists.map(l => l.name));
-        setShowDeletedBanner(true);
-        await Drive.saveData({ lists: prunedLists });
+
+      const savedId = Drive.getSavedFileId();
+      if (savedId) {
+        // Returning user — load their file directly
+        const data = await Drive.loadData();
+        applyLoadedData(data, savedId);
+        setAppScreen('main');
+      } else {
+        // First time — let them create or join
+        setAppScreen('setup');
       }
     } catch (e) {
       setAuthError(e.message === 'access_denied' ? 'Sign-in was cancelled.' : e.message);
@@ -246,9 +471,55 @@ export default function App() {
     Drive.signOut();
     setLists([]);
     setUser(null);
-    setLoggedIn(false);
+    setFileId(null);
+    setAppScreen('login');
     setActiveId(null);
     setAuthError(null);
+  }
+
+  // ── Setup: create ─────────────────────────────────────────────────────────
+  async function handleCreate() {
+    setSetupLoading(true);
+    setSetupError(null);
+    try {
+      const { fileId: id, data } = await Drive.createFamilyFile();
+      applyLoadedData(data, id);
+      setAppScreen('main');
+      setShowFamilyCode(true); // immediately surface the code to share
+      showToast('Family list created!');
+    } catch (e) {
+      setSetupError(e.message);
+    } finally {
+      setSetupLoading(false);
+    }
+  }
+
+  // ── Setup: join ───────────────────────────────────────────────────────────
+  async function handleJoin(code) {
+    setSetupLoading(true);
+    setSetupError(null);
+    try {
+      const data = await Drive.joinFamily(code);
+      applyLoadedData(data, code);
+      setAppScreen('main');
+      showToast('Joined family list!');
+    } catch (e) {
+      setSetupError(e.message);
+    } finally {
+      setSetupLoading(false);
+    }
+  }
+
+  // ── Leave family ──────────────────────────────────────────────────────────
+  function handleLeaveFamily() {
+    if (!window.confirm('Leave this family list? You can rejoin later using the same join code.')) return;
+    Drive.clearSavedFileId();
+    setLists([]);
+    setFileId(null);
+    setShowFamilyCode(false);
+    setSidebarOpen(false);
+    setAppScreen('setup');
+    showToast('Left family list', 'error');
   }
 
   // ── Toast ─────────────────────────────────────────────────────────────────
@@ -316,16 +587,29 @@ export default function App() {
   }
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const activeList = lists.find(l => l.id === activeId);
-  const crossData = activeList ? buildMissingElsewhereData(activeList, lists) : null;
-  const crossMap = activeList ? buildCrossListMap(activeList, lists) : new Map();
+  const activeList    = lists.find(l => l.id === activeId);
+  const crossData     = activeList ? buildMissingElsewhereData(activeList, lists) : null;
+  const crossMap      = activeList ? buildCrossListMap(activeList, lists) : new Map();
   const attentionCount = crossData ? crossData.coveredElsewhere.length + crossData.neededElsewhere.length : 0;
-  const checkedCount = activeList?.items.filter(i => i.checked).length ?? 0;
-  const totalCount = activeList?.items.length ?? 0;
+  const checkedCount  = activeList?.items.filter(i => i.checked).length ?? 0;
+  const totalCount    = activeList?.items.length ?? 0;
 
-  // ── Login gate ────────────────────────────────────────────────────────────
-  if (!loggedIn) {
+  // ── Screen routing ────────────────────────────────────────────────────────
+  if (appScreen === 'login') {
     return <LoginScreen onSignIn={handleSignIn} loading={authLoading} error={authError} ready={ready} />;
+  }
+
+  if (appScreen === 'setup') {
+    return (
+      <SetupScreen
+        onCreate={handleCreate}
+        onJoin={handleJoin}
+        loading={setupLoading}
+        error={setupError}
+        user={user}
+        onSignOut={handleSignOut}
+      />
+    );
   }
 
   // ── Main app ──────────────────────────────────────────────────────────────
@@ -339,6 +623,16 @@ export default function App() {
         </div>
       )}
 
+      {/* Family code modal */}
+      {showFamilyCode && fileId && (
+        <FamilyCodeModal
+          fileId={fileId}
+          onClose={() => setShowFamilyCode(false)}
+          onLeave={handleLeaveFamily}
+          showToast={showToast}
+        />
+      )}
+
       {/* Auto-delete banner */}
       {showDeletedBanner && (
         <div style={{ background: '#fef3c7', borderBottom: '1px solid #fde68a', padding: '10px 20px', fontSize: 13, color: '#92400e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -348,18 +642,27 @@ export default function App() {
       )}
 
       {/* Header */}
-      <header style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '0 20px', height: 58, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', padding: 4, borderRadius: 8, color: '#374151' }}>☰</button>
-          <span style={{ fontWeight: 700, fontSize: 18, color: '#111827', letterSpacing: '-0.5px' }}>🛒 ShopList</span>
-          {saving && (
-            <span title="Saving…" style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', display: 'inline-block', animation: 'pulse 1s ease-in-out infinite' }} />
-          )}
+      <header style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '0 16px', height: 58, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', padding: 4, borderRadius: 8, color: '#374151', flexShrink: 0 }}>☰</button>
+          <span style={{ fontWeight: 700, fontSize: 18, color: '#111827', letterSpacing: '-0.5px', flexShrink: 0 }}>🛒 ShopList</span>
+          {saving && <span title="Saving…" style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', display: 'inline-block', animation: 'pulse 1s ease-in-out infinite', flexShrink: 0 }} />}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          {/* Family code button */}
+          {fileId && (
+            <button
+              onClick={() => setShowFamilyCode(true)}
+              title="View family join code"
+              style={{ background: '#f0fdf4', color: '#16a34a', border: '1.5px solid #bbf7d0', borderRadius: 10, padding: '6px 12px', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <span style={{ fontFamily: "'DM Mono',monospace", letterSpacing: 1 }}>{Drive.getShortCode(fileId)}</span>
+              <span style={{ fontSize: 11, opacity: 0.7 }}>👨‍👩‍👧‍👦</span>
+            </button>
+          )}
           <button
             onClick={() => { setShowNewList(true); setSidebarOpen(true); }}
-            style={{ background: '#111827', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 16px', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
+            style={{ background: '#111827', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
           >
             + New List
           </button>
@@ -370,10 +673,10 @@ export default function App() {
               title={`${user.name ?? ''} — click to sign out`}
               referrerPolicy="no-referrer"
               onClick={handleSignOut}
-              style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid #e5e7eb', cursor: 'pointer' }}
+              style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid #e5e7eb', cursor: 'pointer', flexShrink: 0 }}
             />
           ) : (
-            <button onClick={handleSignOut} style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 12px', fontSize: 13, color: '#6b7280', cursor: 'pointer', fontFamily: 'inherit' }}>
+            <button onClick={handleSignOut} style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 10px', fontSize: 13, color: '#6b7280', cursor: 'pointer', fontFamily: 'inherit' }}>
               Sign out
             </button>
           )}
@@ -382,12 +685,10 @@ export default function App() {
 
       <div style={{ display: 'flex', flex: 1, position: 'relative' }}>
 
-        {/* Sidebar overlay */}
         {sidebarOpen && (
           <div onClick={() => setSidebarOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 200 }} />
         )}
 
-        {/* Sidebar */}
         <aside style={{ position: 'fixed', top: 58, left: 0, bottom: 0, zIndex: 300, width: 270, background: '#fff', borderRight: '1px solid #e5e7eb', transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform .25s ease', overflowY: 'auto', padding: '12px 0' }}>
           {showNewList && (
             <div style={{ margin: '0 12px 12px', background: '#f9fafb', borderRadius: 12, padding: 14, border: '1px solid #e5e7eb' }}>
@@ -425,23 +726,23 @@ export default function App() {
                   <div style={{ fontWeight: 600, fontSize: 14, color: '#111827' }}>{list.name}</div>
                   <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{unchecked} remaining · {getAge(list.createdAt)}</div>
                 </div>
-                <button
-                  onClick={e => { e.stopPropagation(); deleteList(list.id); }}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, color: '#d1d5db', padding: 4, borderRadius: 6 }}
-                >🗑</button>
+                <button onClick={e => { e.stopPropagation(); deleteList(list.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, color: '#d1d5db', padding: 4, borderRadius: 6 }}>🗑</button>
               </div>
             );
           })}
 
-          <div style={{ margin: '16px 12px 4px', padding: '10px 14px', background: '#fef3c7', borderRadius: 10, fontSize: 12, color: '#92400e' }}>
-            <b>⚡ Drive Sync:</b> Changes save to your Google Drive appdata folder automatically.
+          <div style={{ margin: '16px 12px 4px', padding: '10px 14px', background: '#f0fdf4', borderRadius: 10, fontSize: 12, color: '#166534', cursor: 'pointer' }}
+            onClick={() => { setShowFamilyCode(true); setSidebarOpen(false); }}>
+            <b>👨‍👩‍👧‍👦 Family Code:</b> {Drive.getShortCode(fileId)} — tap to share
+          </div>
+          <div style={{ margin: '6px 12px 4px', padding: '10px 14px', background: '#fef3c7', borderRadius: 10, fontSize: 12, color: '#92400e' }}>
+            <b>⚡ Drive Sync:</b> Saves automatically. Syncs every 30 s and on tab focus.
           </div>
           <div style={{ margin: '6px 12px 12px', padding: '10px 14px', background: '#eff6ff', borderRadius: 10, fontSize: 12, color: '#1e40af' }}>
             <b>🗑 Auto-clean:</b> Lists older than 2 months are deleted automatically.
           </div>
         </aside>
 
-        {/* Main content */}
         <main style={{ flex: 1, padding: '20px', maxWidth: 680, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
           {!activeList ? (
             <div style={{ textAlign: 'center', marginTop: 80, color: '#9ca3af' }}>
@@ -470,16 +771,10 @@ export default function App() {
 
               {/* Tabs */}
               <div style={{ display: 'flex', gap: 4, marginBottom: 14, background: '#fff', borderRadius: 12, padding: 4, border: '1px solid #e5e7eb', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                <button
-                  onClick={() => setActiveTab('items')}
-                  style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14, background: activeTab === 'items' ? '#111827' : 'transparent', color: activeTab === 'items' ? '#fff' : '#6b7280', transition: 'all .15s', fontFamily: 'inherit' }}
-                >
+                <button onClick={() => setActiveTab('items')} style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14, background: activeTab === 'items' ? '#111827' : 'transparent', color: activeTab === 'items' ? '#fff' : '#6b7280', transition: 'all .15s', fontFamily: 'inherit' }}>
                   📋 Items
                 </button>
-                <button
-                  onClick={() => setActiveTab('missing')}
-                  style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14, background: activeTab === 'missing' ? '#111827' : 'transparent', color: activeTab === 'missing' ? '#fff' : '#6b7280', transition: 'all .15s', position: 'relative', fontFamily: 'inherit' }}
-                >
+                <button onClick={() => setActiveTab('missing')} style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14, background: activeTab === 'missing' ? '#111827' : 'transparent', color: activeTab === 'missing' ? '#fff' : '#6b7280', transition: 'all .15s', position: 'relative', fontFamily: 'inherit' }}>
                   🔍 Cross-List
                   {attentionCount > 0 && (
                     <span style={{ position: 'absolute', top: 5, right: 12, background: '#f59e0b', color: '#fff', borderRadius: 20, padding: '1px 7px', fontSize: 11, fontWeight: 700 }}>{attentionCount}</span>
@@ -500,40 +795,18 @@ export default function App() {
                         <div key={item.id}>
                           {idx > 0 && <div style={{ height: 1, background: '#f3f4f6', margin: '0 16px' }} />}
                           {editingItem?.id === item.id ? (
-                            /* Edit row */
                             <div style={{ padding: '12px 16px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                              <input
-                                autoFocus
-                                value={editingItem.name}
-                                onChange={e => setEditingItem({ ...editingItem, name: e.target.value })}
-                                style={{ flex: 2, border: '1.5px solid #d1d5db', borderRadius: 8, padding: '6px 10px', fontSize: 14, minWidth: 100, fontFamily: 'inherit' }}
-                              />
-                              <input
-                                type="number"
-                                value={editingItem.qty}
-                                onChange={e => setEditingItem({ ...editingItem, qty: e.target.value })}
-                                style={{ width: 56, border: '1.5px solid #d1d5db', borderRadius: 8, padding: '6px 10px', fontSize: 14, fontFamily: "'DM Mono',monospace" }}
-                              />
-                              <input
-                                value={editingItem.unit}
-                                onChange={e => setEditingItem({ ...editingItem, unit: e.target.value })}
-                                placeholder="unit"
-                                style={{ width: 64, border: '1.5px solid #d1d5db', borderRadius: 8, padding: '6px 10px', fontSize: 14, fontFamily: 'inherit' }}
-                              />
+                              <input autoFocus value={editingItem.name} onChange={e => setEditingItem({ ...editingItem, name: e.target.value })} style={{ flex: 2, border: '1.5px solid #d1d5db', borderRadius: 8, padding: '6px 10px', fontSize: 14, minWidth: 100, fontFamily: 'inherit' }} />
+                              <input type="number" value={editingItem.qty} onChange={e => setEditingItem({ ...editingItem, qty: e.target.value })} style={{ width: 56, border: '1.5px solid #d1d5db', borderRadius: 8, padding: '6px 10px', fontSize: 14, fontFamily: "'DM Mono',monospace" }} />
+                              <input value={editingItem.unit} onChange={e => setEditingItem({ ...editingItem, unit: e.target.value })} placeholder="unit" style={{ width: 64, border: '1.5px solid #d1d5db', borderRadius: 8, padding: '6px 10px', fontSize: 14, fontFamily: 'inherit' }} />
                               <button onClick={() => saveEdit(item.id)} style={{ background: '#111827', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Save</button>
                               <button onClick={() => setEditingItem(null)} style={{ background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
                             </div>
                           ) : (
-                            /* Item row */
-                            <div
-                              style={{ padding: '11px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}
+                            <div style={{ padding: '11px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}
                               onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
-                              onMouseLeave={e => e.currentTarget.style.background = ''}
-                            >
-                              <button
-                                onClick={() => toggleItem(item.id)}
-                                style={{ width: 22, height: 22, marginTop: 2, borderRadius: 6, border: item.checked ? 'none' : '2px solid #d1d5db', background: item.checked ? '#22c55e' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .15s' }}
-                              >
+                              onMouseLeave={e => e.currentTarget.style.background = ''}>
+                              <button onClick={() => toggleItem(item.id)} style={{ width: 22, height: 22, marginTop: 2, borderRadius: 6, border: item.checked ? 'none' : '2px solid #d1d5db', background: item.checked ? '#22c55e' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .15s' }}>
                                 {item.checked && <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>✓</span>}
                               </button>
                               <div style={{ flex: 1 }}>
@@ -568,28 +841,9 @@ export default function App() {
                     <div style={{ background: '#fff', borderRadius: 16, padding: 16, border: '1px solid #e5e7eb', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 12 }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Add Item</div>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        <input
-                          autoFocus
-                          value={newItem.name}
-                          onChange={e => setNewItem({ ...newItem, name: e.target.value })}
-                          onKeyDown={e => e.key === 'Enter' && addItem()}
-                          placeholder="Item name…"
-                          style={{ flex: 2, border: '1.5px solid #d1d5db', borderRadius: 10, padding: '9px 12px', fontSize: 14, outline: 'none', minWidth: 120, fontFamily: 'inherit' }}
-                        />
-                        <input
-                          type="number"
-                          value={newItem.qty}
-                          min={0}
-                          step="any"
-                          onChange={e => setNewItem({ ...newItem, qty: e.target.value === '' ? '' : Number(e.target.value) })}
-                          style={{ width: 60, border: '1.5px solid #d1d5db', borderRadius: 10, padding: '9px 10px', fontSize: 14, outline: 'none', fontFamily: "'DM Mono',monospace" }}
-                        />
-                        <input
-                          value={newItem.unit}
-                          onChange={e => setNewItem({ ...newItem, unit: e.target.value })}
-                          placeholder="unit"
-                          style={{ width: 70, border: '1.5px solid #d1d5db', borderRadius: 10, padding: '9px 10px', fontSize: 14, outline: 'none', fontFamily: 'inherit' }}
-                        />
+                        <input autoFocus value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} onKeyDown={e => e.key === 'Enter' && addItem()} placeholder="Item name…" style={{ flex: 2, border: '1.5px solid #d1d5db', borderRadius: 10, padding: '9px 12px', fontSize: 14, outline: 'none', minWidth: 120, fontFamily: 'inherit' }} />
+                        <input type="number" value={newItem.qty} min={0} step="any" onChange={e => setNewItem({ ...newItem, qty: e.target.value === '' ? '' : Number(e.target.value) })} style={{ width: 60, border: '1.5px solid #d1d5db', borderRadius: 10, padding: '9px 10px', fontSize: 14, outline: 'none', fontFamily: "'DM Mono',monospace" }} />
+                        <input value={newItem.unit} onChange={e => setNewItem({ ...newItem, unit: e.target.value })} placeholder="unit" style={{ width: 70, border: '1.5px solid #d1d5db', borderRadius: 10, padding: '9px 10px', fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
                       </div>
                       <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                         <button onClick={addItem} style={{ flex: 1, background: '#111827', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 0', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>Add Item</button>
@@ -597,10 +851,7 @@ export default function App() {
                       </div>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => setShowAddItem(true)}
-                      style={{ width: '100%', background: '#fff', color: '#374151', border: '1.5px dashed #d1d5db', borderRadius: 14, padding: '13px 0', fontWeight: 600, fontSize: 14, cursor: 'pointer', marginBottom: 12, fontFamily: 'inherit' }}
-                    >
+                    <button onClick={() => setShowAddItem(true)} style={{ width: '100%', background: '#fff', color: '#374151', border: '1.5px dashed #d1d5db', borderRadius: 14, padding: '13px 0', fontWeight: 600, fontSize: 14, cursor: 'pointer', marginBottom: 12, fontFamily: 'inherit' }}>
                       + Add Item
                     </button>
                   )}
@@ -610,7 +861,6 @@ export default function App() {
               {/* ── CROSS-LIST TAB ── */}
               {activeTab === 'missing' && crossData && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {/* Legend */}
                   <div style={{ background: '#fff', borderRadius: 14, padding: '14px 18px', border: '1px solid #e5e7eb', fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
                     <div style={{ fontWeight: 700, marginBottom: 6, color: '#111827' }}>🔍 How this works</div>
                     Scans your unchecked items and compares them across all lists by name. Each unchecked item is classified into one of three groups.
@@ -621,52 +871,21 @@ export default function App() {
                     </div>
                   </div>
 
-                  <Section
-                    title="⚠️ Also needed in other lists"
-                    subtitle="Still unchecked in at least one other list — you still need to buy these."
-                    color="#b45309" bg="#fffbeb" border="#fde68a"
-                    count={crossData.neededElsewhere.length}
-                    expanded={missingExpanded.neededElsewhere}
-                    onToggle={() => setMissingExpanded(p => ({ ...p, neededElsewhere: !p.neededElsewhere }))}
-                  >
-                    {crossData.neededElsewhere.length === 0
-                      ? <EmptyNote>No items in this category.</EmptyNote>
-                      : crossData.neededElsewhere.map(({ item, matchingOthers }) => (
-                          <CrossItem key={item.id} item={item} matches={matchingOthers} onToggle={() => toggleItem(item.id)} />
-                        ))}
+                  <Section title="⚠️ Also needed in other lists" subtitle="Still unchecked in at least one other list — you still need to buy these." color="#b45309" bg="#fffbeb" border="#fde68a" count={crossData.neededElsewhere.length} expanded={missingExpanded.neededElsewhere} onToggle={() => setMissingExpanded(p => ({ ...p, neededElsewhere: !p.neededElsewhere }))}>
+                    {crossData.neededElsewhere.length === 0 ? <EmptyNote>No items in this category.</EmptyNote>
+                      : crossData.neededElsewhere.map(({ item, matchingOthers }) => <CrossItem key={item.id} item={item} matches={matchingOthers} onToggle={() => toggleItem(item.id)} />)}
                   </Section>
 
-                  <Section
-                    title="✅ Already done in all other lists"
-                    subtitle="Checked off in every other list that has them — consider if you still need them here."
-                    color="#166534" bg="#f0fdf4" border="#bbf7d0"
-                    count={crossData.coveredElsewhere.length}
-                    expanded={missingExpanded.coveredElsewhere}
-                    onToggle={() => setMissingExpanded(p => ({ ...p, coveredElsewhere: !p.coveredElsewhere }))}
-                  >
-                    {crossData.coveredElsewhere.length === 0
-                      ? <EmptyNote>No items in this category.</EmptyNote>
-                      : crossData.coveredElsewhere.map(({ item, matchingOthers }) => (
-                          <CrossItem key={item.id} item={item} matches={matchingOthers} onToggle={() => toggleItem(item.id)} />
-                        ))}
+                  <Section title="✅ Already done in all other lists" subtitle="Checked off in every other list that has them — consider if you still need them here." color="#166534" bg="#f0fdf4" border="#bbf7d0" count={crossData.coveredElsewhere.length} expanded={missingExpanded.coveredElsewhere} onToggle={() => setMissingExpanded(p => ({ ...p, coveredElsewhere: !p.coveredElsewhere }))}>
+                    {crossData.coveredElsewhere.length === 0 ? <EmptyNote>No items in this category.</EmptyNote>
+                      : crossData.coveredElsewhere.map(({ item, matchingOthers }) => <CrossItem key={item.id} item={item} matches={matchingOthers} onToggle={() => toggleItem(item.id)} />)}
                   </Section>
 
-                  <Section
-                    title="🔵 Unique to this list"
-                    subtitle="These unchecked items don't appear in any other list."
-                    color="#1e40af" bg="#eff6ff" border="#bfdbfe"
-                    count={crossData.uniqueToThis.length}
-                    expanded={missingExpanded.uniqueToThis}
-                    onToggle={() => setMissingExpanded(p => ({ ...p, uniqueToThis: !p.uniqueToThis }))}
-                  >
-                    {crossData.uniqueToThis.length === 0
-                      ? <EmptyNote>No items in this category.</EmptyNote>
-                      : crossData.uniqueToThis.map(({ item }) => (
-                          <CrossItem key={item.id} item={item} matches={[]} onToggle={() => toggleItem(item.id)} />
-                        ))}
+                  <Section title="🔵 Unique to this list" subtitle="These unchecked items don't appear in any other list." color="#1e40af" bg="#eff6ff" border="#bfdbfe" count={crossData.uniqueToThis.length} expanded={missingExpanded.uniqueToThis} onToggle={() => setMissingExpanded(p => ({ ...p, uniqueToThis: !p.uniqueToThis }))}>
+                    {crossData.uniqueToThis.length === 0 ? <EmptyNote>No items in this category.</EmptyNote>
+                      : crossData.uniqueToThis.map(({ item }) => <CrossItem key={item.id} item={item} matches={[]} onToggle={() => toggleItem(item.id)} />)}
                   </Section>
 
-                  {/* Summary card */}
                   <div style={{ background: '#111827', borderRadius: 14, padding: '16px 20px', color: '#fff' }}>
                     <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 10 }}>📊 Summary for "{activeList.name}"</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, textAlign: 'center' }}>
@@ -694,7 +913,7 @@ export default function App() {
         @keyframes pulse { 0%,100% { opacity:.4; } 50% { opacity:1; } }
         * { box-sizing:border-box; }
         button:active { opacity:.8; }
-        input:focus { border-color:#111827 !important; box-shadow:0 0 0 2px rgba(17,24,39,0.08); }
+        input:focus, textarea:focus { border-color:#111827 !important; box-shadow:0 0 0 2px rgba(17,24,39,0.08); }
       `}</style>
     </div>
   );
