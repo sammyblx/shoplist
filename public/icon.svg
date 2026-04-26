@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Green rounded background -->
+  <rect width="512" height="512" rx="96" fill="#2e7d32"/>
+  <!-- White page -->
+  <rect x="152" y="112" width="208" height="288" rx="20" fill="white"/>
+  <!-- List lines -->
+  <rect x="192" y="168" width="128" height="16" rx="8" fill="#2e7d32"/>
+  <rect x="192" y="208" width="128" height="16" rx="8" fill="#2e7d32"/>
+  <rect x="192" y="248" width="96"  height="16" rx="8" fill="#2e7d32"/>
+  <rect x="192" y="288" width="72"  height="16" rx="8" fill="#2e7d32"/>
+  <!-- Checkmark overlapping bottom-right -->
+  <circle cx="336" cy="336" r="64" fill="#4caf50"/>
+  <polyline points="308,336 326,355 364,315" stroke="white" stroke-width="14"
+    fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
