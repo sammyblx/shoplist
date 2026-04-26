@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import * as Drive from './drive.js';
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function uid() { return crypto.randomUUID(); }
 
 function getAge(dateStr) {
@@ -128,7 +128,7 @@ function LoginScreen({ onSignIn, loading, error, ready }) {
           <div style={{ fontSize: 52, marginBottom: 16 }}>🛒</div>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111827', margin: '0 0 10px', letterSpacing: '-0.5px' }}>ShopList</h1>
           <p style={{ fontSize: 15, color: '#6b7280', margin: '0 0 30px', lineHeight: 1.6 }}>
-            Shared shopping lists for the whole family,<br />synced through Google Drive.
+            Personal and shared shopping lists,<br />synced through Google Drive.
           </p>
           {error && (
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#dc2626', textAlign: 'left' }}>
@@ -162,121 +162,105 @@ function LoginScreen({ onSignIn, loading, error, ready }) {
   );
 }
 
-// ── SetupScreen ───────────────────────────────────────────────────────────────
-function SetupScreen({ onCreate, onJoin, loading, error, user, onSignOut }) {
-  const [mode, setMode] = useState(null); // null | 'join'
-  const [code, setCode] = useState('');
+// ── GroupManageModal ──────────────────────────────────────────────────────────
+function GroupManageModal({ onClose, onCreate, onJoin, loading, error }) {
+  const [tab, setTab] = useState('create');
+  const [name, setName] = useState('');
+  const [joinCode, setJoinCode] = useState('');
+  const [joinName, setJoinName] = useState('');
+
+  const tabBtn = (id, label) => (
+    <button
+      onClick={() => setTab(id)}
+      style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14, background: tab === id ? '#111827' : 'transparent', color: tab === id ? '#fff' : '#6b7280', transition: 'all .15s', fontFamily: 'inherit' }}
+    >
+      {label}
+    </button>
+  );
 
   return (
-    <div style={{ fontFamily: "'DM Sans','Segoe UI',sans-serif", minHeight: '100vh', background: '#f0f2f5', display: 'flex', flexDirection: 'column' }}>
-      <header style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '0 20px', height: 58, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontWeight: 700, fontSize: 18, color: '#111827', letterSpacing: '-0.5px' }}>🛒 ShopList</span>
-        <button onClick={onSignOut} style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 12px', fontSize: 13, color: '#6b7280', cursor: 'pointer', fontFamily: 'inherit' }}>
-          Sign out
-        </button>
-      </header>
-
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-        <div style={{ maxWidth: 440, width: '100%' }}>
-          <div style={{ textAlign: 'center', marginBottom: 28 }}>
-            <div style={{ fontSize: 44, marginBottom: 10 }}>👨‍👩‍👧‍👦</div>
-            <h1 style={{ fontSize: 24, fontWeight: 700, color: '#111827', margin: '0 0 8px', letterSpacing: '-0.5px' }}>Set up your family list</h1>
-            <p style={{ fontSize: 14, color: '#6b7280', margin: 0, lineHeight: 1.6 }}>
-              {user?.name ? `Welcome, ${user.name.split(' ')[0]}! ` : ''}
-              Create a new shared list or join one with a family code.
-            </p>
-          </div>
-
-          {error && (
-            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#dc2626' }}>
-              {error}
-            </div>
-          )}
-
-          {/* Create card */}
-          <div style={{ background: '#fff', borderRadius: 16, padding: '22px 24px', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>✨</div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>Create new family list</div>
-                <div style={{ fontSize: 13, color: '#6b7280' }}>Start fresh and share the code with family</div>
-              </div>
-            </div>
-            <button
-              onClick={onCreate}
-              disabled={loading}
-              style={{ width: '100%', background: '#111827', color: '#fff', border: 'none', borderRadius: 12, padding: '12px 0', fontWeight: 600, fontSize: 15, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, fontFamily: 'inherit' }}
-            >
-              {loading && mode === null ? 'Creating…' : 'Create Family List'}
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0' }}>
-            <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
-            <span style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>or</span>
-            <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
-          </div>
-
-          {/* Join card */}
-          <div style={{ background: '#fff', borderRadius: 16, padding: '22px 24px', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>🔗</div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>Join existing family</div>
-                <div style={{ fontSize: 13, color: '#6b7280' }}>Enter the join code from a family member</div>
-              </div>
-            </div>
-
-            {mode === 'join' ? (
-              <>
-                <textarea
-                  autoFocus
-                  value={code}
-                  onChange={e => setCode(e.target.value)}
-                  placeholder="Paste the full join code here…"
-                  rows={3}
-                  style={{ width: '100%', border: '1.5px solid #d1d5db', borderRadius: 10, padding: '10px 12px', fontSize: 13, fontFamily: "'DM Mono',monospace", resize: 'none', outline: 'none', boxSizing: 'border-box', marginBottom: 10, lineHeight: 1.5 }}
-                />
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    onClick={() => onJoin(code.trim())}
-                    disabled={loading || !code.trim()}
-                    style={{ flex: 1, background: '#111827', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 0', fontWeight: 600, fontSize: 14, cursor: loading || !code.trim() ? 'not-allowed' : 'pointer', opacity: loading || !code.trim() ? 0.6 : 1, fontFamily: 'inherit' }}
-                  >
-                    {loading && mode === 'join' ? 'Joining…' : 'Join →'}
-                  </button>
-                  <button
-                    onClick={() => { setMode(null); setCode(''); }}
-                    style={{ flex: 1, background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, padding: '11px 0', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </>
-            ) : (
-              <button
-                onClick={() => setMode('join')}
-                style={{ width: '100%', background: '#eff6ff', color: '#1d4ed8', border: '1.5px solid #bfdbfe', borderRadius: 12, padding: '12px 0', fontWeight: 600, fontSize: 15, cursor: 'pointer', fontFamily: 'inherit' }}
-              >
-                Enter family code
-              </button>
-            )}
-          </div>
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div style={{ background: '#fff', borderRadius: 20, padding: '28px 24px', maxWidth: 420, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111827' }}>Shared Group</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#9ca3af', lineHeight: 1 }}>✕</button>
         </div>
+
+        <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: '#f3f4f6', borderRadius: 12, padding: 4 }}>
+          {tabBtn('create', '✨ Create New')}
+          {tabBtn('join', '🔗 Join Existing')}
+        </div>
+
+        {error && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#dc2626' }}>
+            {error}
+          </div>
+        )}
+
+        {tab === 'create' && (
+          <>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Group name</label>
+            <input
+              autoFocus
+              value={name}
+              onChange={e => setName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && name.trim() && onCreate(name)}
+              placeholder="e.g. Home, Flatmates, Work…"
+              style={{ width: '100%', border: '1.5px solid #d1d5db', borderRadius: 10, padding: '10px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box', marginBottom: 16, fontFamily: 'inherit' }}
+            />
+            <button
+              onClick={() => onCreate(name)}
+              disabled={loading || !name.trim()}
+              style={{ width: '100%', background: '#111827', color: '#fff', border: 'none', borderRadius: 12, padding: '12px 0', fontWeight: 600, fontSize: 15, cursor: loading || !name.trim() ? 'not-allowed' : 'pointer', opacity: loading || !name.trim() ? 0.6 : 1, fontFamily: 'inherit' }}
+            >
+              {loading && tab === 'create' ? 'Creating…' : 'Create Group'}
+            </button>
+          </>
+        )}
+
+        {tab === 'join' && (
+          <>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Join code (full file ID)</label>
+            <textarea
+              autoFocus
+              value={joinCode}
+              onChange={e => setJoinCode(e.target.value)}
+              placeholder="Paste the full join code here…"
+              rows={2}
+              style={{ width: '100%', border: '1.5px solid #d1d5db', borderRadius: 10, padding: '10px 12px', fontSize: 13, fontFamily: "'DM Mono',monospace", resize: 'none', outline: 'none', boxSizing: 'border-box', marginBottom: 12, lineHeight: 1.5 }}
+            />
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Local name for this group</label>
+            <input
+              value={joinName}
+              onChange={e => setJoinName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && joinCode.trim() && joinName.trim() && onJoin(joinCode, joinName)}
+              placeholder="e.g. Flatmates, Mum's list…"
+              style={{ width: '100%', border: '1.5px solid #d1d5db', borderRadius: 10, padding: '10px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box', marginBottom: 16, fontFamily: 'inherit' }}
+            />
+            <button
+              onClick={() => onJoin(joinCode, joinName)}
+              disabled={loading || !joinCode.trim() || !joinName.trim()}
+              style={{ width: '100%', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 12, padding: '12px 0', fontWeight: 600, fontSize: 15, cursor: loading || !joinCode.trim() || !joinName.trim() ? 'not-allowed' : 'pointer', opacity: loading || !joinCode.trim() || !joinName.trim() ? 0.6 : 1, fontFamily: 'inherit' }}
+            >
+              {loading && tab === 'join' ? 'Joining…' : 'Join Group →'}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-// ── FamilyCodeModal ───────────────────────────────────────────────────────────
-function FamilyCodeModal({ fileId, onClose, onLeave, showToast }) {
-  const shortCode = Drive.getShortCode(fileId);
+// ── GroupCodeModal ────────────────────────────────────────────────────────────
+function GroupCodeModal({ group, onClose, onLeave, showToast }) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(fileId);
+      await navigator.clipboard.writeText(group.fileId);
       setCopied(true);
       showToast('Join code copied!');
       setTimeout(() => setCopied(false), 2000);
@@ -286,27 +270,25 @@ function FamilyCodeModal({ fileId, onClose, onLeave, showToast }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-      onClick={e => e.target === e.currentTarget && onClose()}>
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
       <div style={{ background: '#fff', borderRadius: 20, padding: '32px 28px', maxWidth: 420, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ fontSize: 40, marginBottom: 10 }}>👨‍👩‍👧‍👦</div>
-          <h2 style={{ margin: '0 0 6px', fontSize: 22, fontWeight: 700, color: '#111827', letterSpacing: '-0.3px' }}>Family Code</h2>
-          <p style={{ margin: 0, fontSize: 14, color: '#6b7280', lineHeight: 1.5 }}>
-            Share this code so family members can join your list
-          </p>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>👥</div>
+          <h2 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: '#111827', letterSpacing: '-0.3px' }}>{group.name}</h2>
+          <p style={{ margin: 0, fontSize: 14, color: '#6b7280', lineHeight: 1.5 }}>Share this code so others can join</p>
         </div>
 
-        {/* Short code display */}
         <div style={{ background: '#f0fdf4', border: '2px solid #bbf7d0', borderRadius: 14, padding: '18px 20px', textAlign: 'center', marginBottom: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Your family code</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Short code (ID)</div>
           <div style={{ fontSize: 38, fontWeight: 700, color: '#111827', letterSpacing: 8, fontFamily: "'DM Mono',monospace" }}>
-            {shortCode}
+            {Drive.getShortCode(group.fileId)}
           </div>
-          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 8 }}>First 8 characters — for identification</div>
+          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 8 }}>First 8 characters — for reference only</div>
         </div>
 
-        {/* Full ID — tap to copy on mobile */}
         <div
           onClick={copy}
           title="Tap to copy"
@@ -316,7 +298,7 @@ function FamilyCodeModal({ fileId, onClose, onLeave, showToast }) {
         >
           <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Full join code (tap to copy)</div>
           <div style={{ fontSize: 12, color: '#374151', fontFamily: "'DM Mono',monospace", wordBreak: 'break-all', lineHeight: 1.6 }}>
-            {fileId}
+            {group.fileId}
           </div>
         </div>
 
@@ -339,7 +321,7 @@ function FamilyCodeModal({ fileId, onClose, onLeave, showToast }) {
           onClick={onLeave}
           style={{ width: '100%', background: 'none', border: 'none', color: '#9ca3af', fontSize: 13, cursor: 'pointer', padding: 4, fontFamily: 'inherit' }}
         >
-          Leave this family list
+          Leave this group
         </button>
       </div>
     </div>
@@ -348,76 +330,105 @@ function FamilyCodeModal({ fileId, onClose, onLeave, showToast }) {
 
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
-  // ── Screen state ─────────────────────────────────────────────────────────
-  // 'login' | 'setup' | 'main'
-  const [appScreen, setAppScreen] = useState('login');
+  // ── Auth / screen ─────────────────────────────────────────────────────────
+  const [appScreen, setAppScreen]   = useState('login'); // 'login' | 'main'
+  const [user, setUser]             = useState(null);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError]   = useState(null);
+  const [ready, setReady]           = useState(false);
+
+  // ── Mode / group ──────────────────────────────────────────────────────────
+  const [mode, setMode]                   = useState('personal'); // 'personal' | 'shared'
+  const [groups, setGroups]               = useState([]);         // [{name, fileId}]
+  const [activeGroupIdx, setActiveGroupIdx] = useState(0);
+  const [ctxLoading, setCtxLoading]       = useState(false);
+  const [groupLoading, setGroupLoading]   = useState(false);
+  const [groupError, setGroupError]       = useState(null);
+  const [showGroupManage, setShowGroupManage] = useState(false);
+  const [showGroupCode, setShowGroupCode] = useState(false);
+
+  // Refs so scheduleSave can read current context without being recreated
+  const modeRef         = useRef('personal');
+  const groupsRef       = useRef([]);
+  const activeGroupIdxRef = useRef(0);
 
   // ── List / item state ─────────────────────────────────────────────────────
-  const [lists, setLists] = useState([]);
-  const [activeId, setActiveId] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('items');
-  const [newListName, setNewListName] = useState('');
-  const [showNewList, setShowNewList] = useState(false);
-  const [newItem, setNewItem] = useState({ name: '', qty: 1, unit: '' });
-  const [showAddItem, setShowAddItem] = useState(false);
-  const [toast, setToast] = useState(null);
-  const [autoDeleted, setAutoDeleted] = useState([]);
+  const [lists, setLists]               = useState([]);
+  const [activeId, setActiveId]         = useState(null);
+  const [sidebarOpen, setSidebarOpen]   = useState(false);
+  const [activeTab, setActiveTab]       = useState('items');
+  const [newListName, setNewListName]   = useState('');
+  const [showNewList, setShowNewList]   = useState(false);
+  const [newItem, setNewItem]           = useState({ name: '', qty: 1, unit: '' });
+  const [showAddItem, setShowAddItem]   = useState(false);
+  const [toast, setToast]               = useState(null);
+  const [autoDeleted, setAutoDeleted]   = useState([]);
   const [showDeletedBanner, setShowDeletedBanner] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
+  const [editingItem, setEditingItem]   = useState(null);
   const [missingExpanded, setMissingExpanded] = useState({ coveredElsewhere: true, neededElsewhere: true, uniqueToThis: false });
 
-  // ── Drive / auth state ────────────────────────────────────────────────────
-  const [user, setUser] = useState(null);
-  const [fileId, setFileId] = useState(null);
-  const [authLoading, setAuthLoading] = useState(false);
-  const [authError, setAuthError] = useState(null);
-  const [setupLoading, setSetupLoading] = useState(false);
-  const [setupError, setSetupError] = useState(null);
-  const [ready, setReady] = useState(false);
+  // ── Drive state ───────────────────────────────────────────────────────────
   const [saving, setSaving] = useState(false);
-  const [showFamilyCode, setShowFamilyCode] = useState(false);
-  const saveTimer = useRef(null);
-  const savingRef = useRef(false);  // for polling guard
+  const saveTimer  = useRef(null);
+  const savingRef  = useRef(false);
 
   useEffect(() => {
     Drive.init().then(() => setReady(true)).catch(() => {});
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, []);
 
+  // ── Keep refs in sync ─────────────────────────────────────────────────────
+  useEffect(() => { modeRef.current = mode; }, [mode]);
+  useEffect(() => { groupsRef.current = groups; }, [groups]);
+  useEffect(() => { activeGroupIdxRef.current = activeGroupIdx; }, [activeGroupIdx]);
+
   // ── Polling + focus refetch ────────────────────────────────────────────────
   useEffect(() => {
     if (appScreen !== 'main') return;
-
     const fetchLatest = async () => {
-      if (savingRef.current) return; // don't overwrite pending writes
+      if (savingRef.current) return;
       try {
-        const fresh = await Drive.loadData();
-        setLists(fresh.lists || []);
-      } catch { /* silent — user may be offline */ }
+        let data;
+        if (modeRef.current === 'personal') {
+          data = await Drive.loadPersonalData();
+        } else {
+          const g = groupsRef.current[activeGroupIdxRef.current];
+          if (!g) return;
+          data = await Drive.loadGroupData(g.fileId);
+        }
+        setLists(data.lists || []);
+      } catch { /* silent — offline */ }
     };
-
     const interval = setInterval(fetchLatest, 30_000);
     window.addEventListener('focus', fetchLatest);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', fetchLatest);
-    };
+    return () => { clearInterval(interval); window.removeEventListener('focus', fetchLatest); };
   }, [appScreen]);
 
-  // ── Debounced save ────────────────────────────────────────────────────────
+  // ── Debounced save (context-aware via refs) ───────────────────────────────
   const scheduleSave = useCallback((nextLists) => {
+    // Capture context at schedule time so a context switch before fire doesn't corrupt data
+    const m  = modeRef.current;
+    const g  = groupsRef.current[activeGroupIdxRef.current];
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
       savingRef.current = true;
       setSaving(true);
-      try { await Drive.saveData({ lists: nextLists }); }
-      catch { showToast('Auto-save failed', 'error'); }
-      finally { setSaving(false); savingRef.current = false; }
+      try {
+        if (m === 'personal') {
+          await Drive.savePersonalData({ lists: nextLists });
+        } else if (g) {
+          await Drive.saveGroupData(g.fileId, { lists: nextLists });
+        }
+      } catch {
+        setToast({ msg: 'Auto-save failed', type: 'error' });
+        setTimeout(() => setToast(null), 2800);
+      } finally {
+        setSaving(false);
+        savingRef.current = false;
+      }
     }, 1500);
-  }, []);
+  }, []); // stable — reads context via refs
 
-  // Optimistic update: apply locally then schedule Drive write
   const updateLists = useCallback((fn) => {
     setLists(prev => {
       const next = fn(prev);
@@ -426,19 +437,23 @@ export default function App() {
     });
   }, [scheduleSave]);
 
-  // ── Data helpers ──────────────────────────────────────────────────────────
-  function applyLoadedData(data, id) {
-    const allLists = data.lists || [];
-    const oldLists = allLists.filter(l => isOlderThan2Months(l.createdAt));
-    const pruned   = allLists.filter(l => !isOlderThan2Months(l.createdAt));
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  function showToast(msg, type = 'success') {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 2800);
+  }
+
+  // ── Load helpers ──────────────────────────────────────────────────────────
+  function applyLists(rawLists) {
+    const old    = rawLists.filter(l => isOlderThan2Months(l.createdAt));
+    const pruned = rawLists.filter(l => !isOlderThan2Months(l.createdAt));
     setLists(pruned);
     setActiveId(pruned[0]?.id ?? null);
-    setFileId(id);
-    if (oldLists.length > 0) {
-      setAutoDeleted(oldLists.map(l => l.name));
+    if (old.length > 0) {
+      setAutoDeleted(old.map(l => l.name));
       setShowDeletedBanner(true);
-      Drive.saveData({ lists: pruned }).catch(() => {});
     }
+    return pruned;
   }
 
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -449,17 +464,15 @@ export default function App() {
       await Drive.signIn();
       const userInfo = await Drive.getUserInfo();
       setUser(userInfo);
-
-      const savedId = Drive.getSavedFileId();
-      if (savedId) {
-        // Returning user — load their file directly
-        const data = await Drive.loadData();
-        applyLoadedData(data, savedId);
-        setAppScreen('main');
-      } else {
-        // First time — let them create or join
-        setAppScreen('setup');
-      }
+      await Drive.ensurePersonalFile();
+      const data = await Drive.loadPersonalData();
+      const storedGroups = Drive.getStoredGroups();
+      setGroups(storedGroups);
+      groupsRef.current = storedGroups;
+      applyLists(data.lists || []);
+      setMode('personal');
+      modeRef.current = 'personal';
+      setAppScreen('main');
     } catch (e) {
       setAuthError(e.message === 'access_denied' ? 'Sign-in was cancelled.' : e.message);
     } finally {
@@ -469,63 +482,110 @@ export default function App() {
 
   function handleSignOut() {
     Drive.signOut();
+    if (saveTimer.current) clearTimeout(saveTimer.current);
     setLists([]);
     setUser(null);
-    setFileId(null);
+    setGroups([]);
     setAppScreen('login');
     setActiveId(null);
     setAuthError(null);
-  }
-
-  // ── Setup: create ─────────────────────────────────────────────────────────
-  async function handleCreate() {
-    setSetupLoading(true);
-    setSetupError(null);
-    try {
-      const { fileId: id, data } = await Drive.createFamilyFile();
-      applyLoadedData(data, id);
-      setAppScreen('main');
-      setShowFamilyCode(true); // immediately surface the code to share
-      showToast('Family list created!');
-    } catch (e) {
-      setSetupError(e.message);
-    } finally {
-      setSetupLoading(false);
-    }
-  }
-
-  // ── Setup: join ───────────────────────────────────────────────────────────
-  async function handleJoin(code) {
-    setSetupLoading(true);
-    setSetupError(null);
-    try {
-      const data = await Drive.joinFamily(code);
-      applyLoadedData(data, code);
-      setAppScreen('main');
-      showToast('Joined family list!');
-    } catch (e) {
-      setSetupError(e.message);
-    } finally {
-      setSetupLoading(false);
-    }
-  }
-
-  // ── Leave family ──────────────────────────────────────────────────────────
-  function handleLeaveFamily() {
-    if (!window.confirm('Leave this family list? You can rejoin later using the same join code.')) return;
-    Drive.clearSavedFileId();
-    setLists([]);
-    setFileId(null);
-    setShowFamilyCode(false);
     setSidebarOpen(false);
-    setAppScreen('setup');
-    showToast('Left family list', 'error');
   }
 
-  // ── Toast ─────────────────────────────────────────────────────────────────
-  function showToast(msg, type = 'success') {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 2800);
+  // ── Context switching ─────────────────────────────────────────────────────
+  async function switchToPersonal() {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    setMode('personal');
+    modeRef.current = 'personal';
+    setCtxLoading(true);
+    try {
+      const data = await Drive.loadPersonalData();
+      applyLists(data.lists || []);
+    } catch { showToast('Could not load personal lists', 'error'); }
+    finally { setCtxLoading(false); }
+  }
+
+  async function switchToGroup(idx, currentGroups) {
+    const grps = currentGroups ?? groups;
+    const group = grps[idx];
+    if (!group) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    setMode('shared');
+    modeRef.current = 'shared';
+    setActiveGroupIdx(idx);
+    activeGroupIdxRef.current = idx;
+    setCtxLoading(true);
+    try {
+      const data = await Drive.loadGroupData(group.fileId);
+      applyLists(data.lists || []);
+    } catch { showToast('Could not load group lists', 'error'); }
+    finally { setCtxLoading(false); }
+  }
+
+  // ── Group management ──────────────────────────────────────────────────────
+  async function handleCreateGroup(name) {
+    if (!name.trim()) return;
+    setGroupLoading(true);
+    setGroupError(null);
+    try {
+      const { name: grpName, fileId } = await Drive.createGroup(name);
+      const newGroup = { name: grpName, fileId };
+      const updated = [...groups, newGroup];
+      setGroups(updated);
+      groupsRef.current = updated;
+      Drive.persistGroups(updated);
+      const newIdx = updated.length - 1;
+      setShowGroupManage(false);
+      await switchToGroup(newIdx, updated);
+      setShowGroupCode(true);
+      showToast(`"${grpName}" created!`);
+    } catch (e) {
+      setGroupError(e.message);
+    } finally {
+      setGroupLoading(false);
+    }
+  }
+
+  async function handleJoinGroup(code, localName) {
+    if (!code.trim() || !localName.trim()) return;
+    setGroupLoading(true);
+    setGroupError(null);
+    try {
+      const data = await Drive.joinGroup(code.trim());
+      const newGroup = { name: localName.trim(), fileId: code.trim() };
+      const updated = [...groups, newGroup];
+      setGroups(updated);
+      groupsRef.current = updated;
+      Drive.persistGroups(updated);
+      const newIdx = updated.length - 1;
+      setShowGroupManage(false);
+      setMode('shared');
+      modeRef.current = 'shared';
+      setActiveGroupIdx(newIdx);
+      activeGroupIdxRef.current = newIdx;
+      applyLists(data.lists || []);
+      showToast(`Joined "${localName.trim()}"!`);
+    } catch (e) {
+      setGroupError(e.message);
+    } finally {
+      setGroupLoading(false);
+    }
+  }
+
+  function handleLeaveGroup() {
+    const group = groups[activeGroupIdx];
+    if (!window.confirm(`Leave "${group?.name}"? You can rejoin later with the same code.`)) return;
+    const updated = groups.filter((_, i) => i !== activeGroupIdx);
+    setGroups(updated);
+    groupsRef.current = updated;
+    Drive.persistGroups(updated);
+    setShowGroupCode(false);
+    if (updated.length > 0) {
+      switchToGroup(0, updated);
+    } else {
+      switchToPersonal();
+    }
+    showToast(`Left "${group?.name}"`, 'error');
   }
 
   // ── List CRUD ─────────────────────────────────────────────────────────────
@@ -587,32 +647,22 @@ export default function App() {
   }
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const activeList    = lists.find(l => l.id === activeId);
-  const crossData     = activeList ? buildMissingElsewhereData(activeList, lists) : null;
-  const crossMap      = activeList ? buildCrossListMap(activeList, lists) : new Map();
+  const activeList     = lists.find(l => l.id === activeId);
+  const crossData      = activeList ? buildMissingElsewhereData(activeList, lists) : null;
+  const crossMap       = activeList ? buildCrossListMap(activeList, lists) : new Map();
   const attentionCount = crossData ? crossData.coveredElsewhere.length + crossData.neededElsewhere.length : 0;
-  const checkedCount  = activeList?.items.filter(i => i.checked).length ?? 0;
-  const totalCount    = activeList?.items.length ?? 0;
+  const checkedCount   = activeList?.items.filter(i => i.checked).length ?? 0;
+  const totalCount     = activeList?.items.length ?? 0;
+  const activeGroup    = mode === 'shared' ? groups[activeGroupIdx] : null;
 
   // ── Screen routing ────────────────────────────────────────────────────────
   if (appScreen === 'login') {
     return <LoginScreen onSignIn={handleSignIn} loading={authLoading} error={authError} ready={ready} />;
   }
 
-  if (appScreen === 'setup') {
-    return (
-      <SetupScreen
-        onCreate={handleCreate}
-        onJoin={handleJoin}
-        loading={setupLoading}
-        error={setupError}
-        user={user}
-        onSignOut={handleSignOut}
-      />
-    );
-  }
-
   // ── Main app ──────────────────────────────────────────────────────────────
+  const tabStyle = { padding: '7px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14, transition: 'all .15s', fontFamily: 'inherit' };
+
   return (
     <div style={{ fontFamily: "'DM Sans','Segoe UI',sans-serif", minHeight: '100vh', background: '#f0f2f5', display: 'flex', flexDirection: 'column' }}>
 
@@ -623,12 +673,23 @@ export default function App() {
         </div>
       )}
 
-      {/* Family code modal */}
-      {showFamilyCode && fileId && (
-        <FamilyCodeModal
-          fileId={fileId}
-          onClose={() => setShowFamilyCode(false)}
-          onLeave={handleLeaveFamily}
+      {/* Group manage modal */}
+      {showGroupManage && (
+        <GroupManageModal
+          onClose={() => { setShowGroupManage(false); setGroupError(null); }}
+          onCreate={handleCreateGroup}
+          onJoin={handleJoinGroup}
+          loading={groupLoading}
+          error={groupError}
+        />
+      )}
+
+      {/* Group code modal */}
+      {showGroupCode && activeGroup && (
+        <GroupCodeModal
+          group={activeGroup}
+          onClose={() => setShowGroupCode(false)}
+          onLeave={handleLeaveGroup}
           showToast={showToast}
         />
       )}
@@ -649,17 +710,6 @@ export default function App() {
           {saving && <span title="Saving…" style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', display: 'inline-block', animation: 'pulse 1s ease-in-out infinite', flexShrink: 0 }} />}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          {/* Family code button */}
-          {fileId && (
-            <button
-              onClick={() => setShowFamilyCode(true)}
-              title="View family join code"
-              style={{ background: '#f0fdf4', color: '#16a34a', border: '1.5px solid #bbf7d0', borderRadius: 10, padding: '6px 12px', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}
-            >
-              <span style={{ fontFamily: "'DM Mono',monospace", letterSpacing: 1 }}>{Drive.getShortCode(fileId)}</span>
-              <span style={{ fontSize: 11, opacity: 0.7 }}>👨‍👩‍👧‍👦</span>
-            </button>
-          )}
           <button
             onClick={() => { setShowNewList(true); setSidebarOpen(true); }}
             style={{ background: '#111827', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
@@ -683,13 +733,62 @@ export default function App() {
         </div>
       </header>
 
+      {/* Mode bar */}
+      <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8, position: 'sticky', top: 58, zIndex: 90, flexWrap: 'wrap' }}>
+        <button
+          onClick={switchToPersonal}
+          style={{ ...tabStyle, background: mode === 'personal' ? '#111827' : '#f3f4f6', color: mode === 'personal' ? '#fff' : '#6b7280' }}
+        >
+          🔒 Personal
+        </button>
+        <button
+          onClick={() => {
+            if (groups.length > 0) switchToGroup(activeGroupIdx);
+            else { setMode('shared'); modeRef.current = 'shared'; setShowGroupManage(true); }
+          }}
+          style={{ ...tabStyle, background: mode === 'shared' ? '#111827' : '#f3f4f6', color: mode === 'shared' ? '#fff' : '#6b7280' }}
+        >
+          👥 Shared
+        </button>
+
+        {mode === 'shared' && (
+          <>
+            {groups.length > 0 && (
+              <select
+                value={activeGroupIdx}
+                onChange={e => switchToGroup(Number(e.target.value))}
+                style={{ border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '6px 10px', fontSize: 14, color: '#374151', background: '#f9fafb', fontFamily: 'inherit', cursor: 'pointer', outline: 'none' }}
+              >
+                {groups.map((g, i) => <option key={g.fileId} value={i}>{g.name}</option>)}
+              </select>
+            )}
+            <button
+              onClick={() => { setGroupError(null); setShowGroupManage(true); }}
+              style={{ ...tabStyle, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', padding: '6px 12px' }}
+            >
+              + Group
+            </button>
+            {groups.length > 0 && activeGroup && (
+              <button
+                onClick={() => setShowGroupCode(true)}
+                style={{ ...tabStyle, background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 5 }}
+              >
+                <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, letterSpacing: 1 }}>{Drive.getShortCode(activeGroup.fileId)}</span>
+                <span style={{ fontSize: 11 }}>🔗</span>
+              </button>
+            )}
+          </>
+        )}
+        {ctxLoading && <span style={{ fontSize: 12, color: '#9ca3af' }}>Loading…</span>}
+      </div>
+
       <div style={{ display: 'flex', flex: 1, position: 'relative' }}>
 
         {sidebarOpen && (
           <div onClick={() => setSidebarOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 200 }} />
         )}
 
-        <aside style={{ position: 'fixed', top: 58, left: 0, bottom: 0, zIndex: 300, width: 270, background: '#fff', borderRight: '1px solid #e5e7eb', transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform .25s ease', overflowY: 'auto', padding: '12px 0' }}>
+        <aside style={{ position: 'fixed', top: 97, left: 0, bottom: 0, zIndex: 300, width: 270, background: '#fff', borderRight: '1px solid #e5e7eb', transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform .25s ease', overflowY: 'auto', padding: '12px 0' }}>
           {showNewList && (
             <div style={{ margin: '0 12px 12px', background: '#f9fafb', borderRadius: 12, padding: 14, border: '1px solid #e5e7eb' }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>New List</div>
@@ -708,9 +807,14 @@ export default function App() {
             </div>
           )}
 
-          <div style={{ padding: '0 12px 6px', fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>Your Lists</div>
+          {/* Context label */}
+          <div style={{ margin: '0 12px 8px', padding: '8px 12px', background: mode === 'personal' ? '#f9fafb' : '#eff6ff', borderRadius: 8, fontSize: 12, color: mode === 'personal' ? '#6b7280' : '#1d4ed8', fontWeight: 600 }}>
+            {mode === 'personal' ? '🔒 Personal lists' : `👥 ${activeGroup?.name ?? 'Shared'}`}
+          </div>
 
-          {lists.length === 0 && (
+          <div style={{ padding: '0 12px 6px', fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>Lists</div>
+
+          {lists.length === 0 && !ctxLoading && (
             <div style={{ padding: '20px 16px', color: '#9ca3af', fontSize: 14, textAlign: 'center' }}>No lists yet.</div>
           )}
 
@@ -731,11 +835,7 @@ export default function App() {
             );
           })}
 
-          <div style={{ margin: '16px 12px 4px', padding: '10px 14px', background: '#f0fdf4', borderRadius: 10, fontSize: 12, color: '#166534', cursor: 'pointer' }}
-            onClick={() => { setShowFamilyCode(true); setSidebarOpen(false); }}>
-            <b>👨‍👩‍👧‍👦 Family Code:</b> {Drive.getShortCode(fileId)} — tap to share
-          </div>
-          <div style={{ margin: '6px 12px 4px', padding: '10px 14px', background: '#fef3c7', borderRadius: 10, fontSize: 12, color: '#92400e' }}>
+          <div style={{ margin: '16px 12px 4px', padding: '10px 14px', background: '#fef3c7', borderRadius: 10, fontSize: 12, color: '#92400e' }}>
             <b>⚡ Drive Sync:</b> Saves automatically. Syncs every 30 s and on tab focus.
           </div>
           <div style={{ margin: '6px 12px 12px', padding: '10px 14px', background: '#eff6ff', borderRadius: 10, fontSize: 12, color: '#1e40af' }}>
@@ -744,166 +844,193 @@ export default function App() {
         </aside>
 
         <main style={{ flex: 1, padding: '20px', maxWidth: 680, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
-          {!activeList ? (
-            <div style={{ textAlign: 'center', marginTop: 80, color: '#9ca3af' }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>🛒</div>
-              <div style={{ fontSize: 18, fontWeight: 600, color: '#374151' }}>No list selected</div>
-              <div style={{ fontSize: 14, marginTop: 6 }}>Create a new list to get started</div>
+
+          {/* Shared — no groups yet */}
+          {mode === 'shared' && groups.length === 0 && (
+            <div style={{ textAlign: 'center', marginTop: 60, color: '#9ca3af' }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>👥</div>
+              <div style={{ fontSize: 18, fontWeight: 600, color: '#374151' }}>No shared groups yet</div>
+              <div style={{ fontSize: 14, marginTop: 6, marginBottom: 24 }}>Create a group or join one with a code</div>
+              <button
+                onClick={() => { setGroupError(null); setShowGroupManage(true); }}
+                style={{ background: '#111827', color: '#fff', border: 'none', borderRadius: 12, padding: '12px 28px', fontWeight: 600, fontSize: 15, cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                + Create or Join Group
+              </button>
             </div>
-          ) : (
+          )}
+
+          {/* Normal list view */}
+          {(mode === 'personal' || groups.length > 0) && !ctxLoading && (
             <>
-              {/* List header card */}
-              <div style={{ background: '#fff', borderRadius: 16, padding: '20px 22px', marginBottom: 14, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', letterSpacing: '-0.5px' }}>{activeList.name}</h1>
-                    <div style={{ marginTop: 5, fontSize: 13, color: '#6b7280' }}>Created {getAge(activeList.createdAt)} · {totalCount} items</div>
-                  </div>
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: checkedCount === totalCount && totalCount > 0 ? '#16a34a' : '#374151' }}>{checkedCount}/{totalCount}</div>
-                    <div style={{ fontSize: 11, color: '#9ca3af' }}>checked</div>
-                  </div>
+              {!activeList ? (
+                <div style={{ textAlign: 'center', marginTop: 80, color: '#9ca3af' }}>
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>🛒</div>
+                  <div style={{ fontSize: 18, fontWeight: 600, color: '#374151' }}>No list selected</div>
+                  <div style={{ fontSize: 14, marginTop: 6 }}>Create a new list to get started</div>
                 </div>
-                <div style={{ marginTop: 14, background: '#f3f4f6', borderRadius: 100, height: 6, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${totalCount > 0 ? (checkedCount / totalCount) * 100 : 0}%`, background: checkedCount === totalCount && totalCount > 0 ? '#22c55e' : '#111827', borderRadius: 100, transition: 'width .4s ease' }} />
-                </div>
-              </div>
-
-              {/* Tabs */}
-              <div style={{ display: 'flex', gap: 4, marginBottom: 14, background: '#fff', borderRadius: 12, padding: 4, border: '1px solid #e5e7eb', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                <button onClick={() => setActiveTab('items')} style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14, background: activeTab === 'items' ? '#111827' : 'transparent', color: activeTab === 'items' ? '#fff' : '#6b7280', transition: 'all .15s', fontFamily: 'inherit' }}>
-                  📋 Items
-                </button>
-                <button onClick={() => setActiveTab('missing')} style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14, background: activeTab === 'missing' ? '#111827' : 'transparent', color: activeTab === 'missing' ? '#fff' : '#6b7280', transition: 'all .15s', position: 'relative', fontFamily: 'inherit' }}>
-                  🔍 Cross-List
-                  {attentionCount > 0 && (
-                    <span style={{ position: 'absolute', top: 5, right: 12, background: '#f59e0b', color: '#fff', borderRadius: 20, padding: '1px 7px', fontSize: 11, fontWeight: 700 }}>{attentionCount}</span>
-                  )}
-                </button>
-              </div>
-
-              {/* ── ITEMS TAB ── */}
-              {activeTab === 'items' && (
+              ) : (
                 <>
-                  <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 12 }}>
-                    {activeList.items.length === 0 && (
-                      <div style={{ padding: '32px 20px', textAlign: 'center', color: '#9ca3af', fontSize: 14 }}>No items yet. Add one below!</div>
-                    )}
-                    {activeList.items.map((item, idx) => {
-                      const crossInfo = crossMap.get(item.id);
-                      return (
-                        <div key={item.id}>
-                          {idx > 0 && <div style={{ height: 1, background: '#f3f4f6', margin: '0 16px' }} />}
-                          {editingItem?.id === item.id ? (
-                            <div style={{ padding: '12px 16px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                              <input autoFocus value={editingItem.name} onChange={e => setEditingItem({ ...editingItem, name: e.target.value })} style={{ flex: 2, border: '1.5px solid #d1d5db', borderRadius: 8, padding: '6px 10px', fontSize: 14, minWidth: 100, fontFamily: 'inherit' }} />
-                              <input type="number" value={editingItem.qty} onChange={e => setEditingItem({ ...editingItem, qty: e.target.value })} style={{ width: 56, border: '1.5px solid #d1d5db', borderRadius: 8, padding: '6px 10px', fontSize: 14, fontFamily: "'DM Mono',monospace" }} />
-                              <input value={editingItem.unit} onChange={e => setEditingItem({ ...editingItem, unit: e.target.value })} placeholder="unit" style={{ width: 64, border: '1.5px solid #d1d5db', borderRadius: 8, padding: '6px 10px', fontSize: 14, fontFamily: 'inherit' }} />
-                              <button onClick={() => saveEdit(item.id)} style={{ background: '#111827', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Save</button>
-                              <button onClick={() => setEditingItem(null)} style={{ background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
-                            </div>
-                          ) : (
-                            <div style={{ padding: '11px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}
-                              onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
-                              onMouseLeave={e => e.currentTarget.style.background = ''}>
-                              <button onClick={() => toggleItem(item.id)} style={{ width: 22, height: 22, marginTop: 2, borderRadius: 6, border: item.checked ? 'none' : '2px solid #d1d5db', background: item.checked ? '#22c55e' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .15s' }}>
-                                {item.checked && <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>✓</span>}
-                              </button>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                  <span style={{ fontSize: 15, fontWeight: 500, color: item.checked ? '#9ca3af' : '#111827', textDecoration: item.checked ? 'line-through' : 'none', transition: 'all .2s' }}>{item.name}</span>
-                                  {(item.qty > 0 || item.unit) && (
-                                    <span style={{ fontSize: 12, color: '#9ca3af', fontFamily: "'DM Mono',monospace" }}>{item.qty} {item.unit}</span>
-                                  )}
-                                </div>
-                                {crossInfo && !item.checked && (
-                                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 5 }}>
-                                    {crossInfo.map((c, i) => (
-                                      <span key={i} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: c.checked ? '#f0fdf4' : '#fff7ed', color: c.checked ? '#16a34a' : '#c2410c', border: `1px solid ${c.checked ? '#bbf7d0' : '#fed7aa'}` }}>
-                                        {c.checked ? '✓' : '○'} {c.listName}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                              <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                                <button onClick={() => setEditingItem({ ...item })} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#9ca3af', padding: '4px 6px', borderRadius: 6 }} title="Edit">✏️</button>
-                                <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#fca5a5', padding: '4px 6px', borderRadius: 6 }} title="Remove">✕</button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {showAddItem ? (
-                    <div style={{ background: '#fff', borderRadius: 16, padding: 16, border: '1px solid #e5e7eb', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 12 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Add Item</div>
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        <input autoFocus value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} onKeyDown={e => e.key === 'Enter' && addItem()} placeholder="Item name…" style={{ flex: 2, border: '1.5px solid #d1d5db', borderRadius: 10, padding: '9px 12px', fontSize: 14, outline: 'none', minWidth: 120, fontFamily: 'inherit' }} />
-                        <input type="number" value={newItem.qty} min={0} step="any" onChange={e => setNewItem({ ...newItem, qty: e.target.value === '' ? '' : Number(e.target.value) })} style={{ width: 60, border: '1.5px solid #d1d5db', borderRadius: 10, padding: '9px 10px', fontSize: 14, outline: 'none', fontFamily: "'DM Mono',monospace" }} />
-                        <input value={newItem.unit} onChange={e => setNewItem({ ...newItem, unit: e.target.value })} placeholder="unit" style={{ width: 70, border: '1.5px solid #d1d5db', borderRadius: 10, padding: '9px 10px', fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
+                  {/* List header card */}
+                  <div style={{ background: '#fff', borderRadius: 16, padding: '20px 22px', marginBottom: 14, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', letterSpacing: '-0.5px' }}>{activeList.name}</h1>
+                        <div style={{ marginTop: 5, fontSize: 13, color: '#6b7280' }}>Created {getAge(activeList.createdAt)} · {totalCount} items</div>
                       </div>
-                      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                        <button onClick={addItem} style={{ flex: 1, background: '#111827', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 0', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>Add Item</button>
-                        <button onClick={() => setShowAddItem(false)} style={{ flex: 1, background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, padding: '10px 0', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: checkedCount === totalCount && totalCount > 0 ? '#16a34a' : '#374151' }}>{checkedCount}/{totalCount}</div>
+                        <div style={{ fontSize: 11, color: '#9ca3af' }}>checked</div>
                       </div>
                     </div>
-                  ) : (
-                    <button onClick={() => setShowAddItem(true)} style={{ width: '100%', background: '#fff', color: '#374151', border: '1.5px dashed #d1d5db', borderRadius: 14, padding: '13px 0', fontWeight: 600, fontSize: 14, cursor: 'pointer', marginBottom: 12, fontFamily: 'inherit' }}>
-                      + Add Item
+                    <div style={{ marginTop: 14, background: '#f3f4f6', borderRadius: 100, height: 6, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${totalCount > 0 ? (checkedCount / totalCount) * 100 : 0}%`, background: checkedCount === totalCount && totalCount > 0 ? '#22c55e' : '#111827', borderRadius: 100, transition: 'width .4s ease' }} />
+                    </div>
+                  </div>
+
+                  {/* Tabs */}
+                  <div style={{ display: 'flex', gap: 4, marginBottom: 14, background: '#fff', borderRadius: 12, padding: 4, border: '1px solid #e5e7eb', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+                    <button onClick={() => setActiveTab('items')} style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14, background: activeTab === 'items' ? '#111827' : 'transparent', color: activeTab === 'items' ? '#fff' : '#6b7280', transition: 'all .15s', fontFamily: 'inherit' }}>
+                      📋 Items
                     </button>
+                    <button onClick={() => setActiveTab('missing')} style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14, background: activeTab === 'missing' ? '#111827' : 'transparent', color: activeTab === 'missing' ? '#fff' : '#6b7280', transition: 'all .15s', position: 'relative', fontFamily: 'inherit' }}>
+                      🔍 Cross-List
+                      {attentionCount > 0 && (
+                        <span style={{ position: 'absolute', top: 5, right: 12, background: '#f59e0b', color: '#fff', borderRadius: 20, padding: '1px 7px', fontSize: 11, fontWeight: 700 }}>{attentionCount}</span>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* ── ITEMS TAB ── */}
+                  {activeTab === 'items' && (
+                    <>
+                      <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 12 }}>
+                        {activeList.items.length === 0 && (
+                          <div style={{ padding: '32px 20px', textAlign: 'center', color: '#9ca3af', fontSize: 14 }}>No items yet. Add one below!</div>
+                        )}
+                        {activeList.items.map((item, idx) => {
+                          const crossInfo = crossMap.get(item.id);
+                          return (
+                            <div key={item.id}>
+                              {idx > 0 && <div style={{ height: 1, background: '#f3f4f6', margin: '0 16px' }} />}
+                              {editingItem?.id === item.id ? (
+                                <div style={{ padding: '12px 16px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                                  <input autoFocus value={editingItem.name} onChange={e => setEditingItem({ ...editingItem, name: e.target.value })} style={{ flex: 2, border: '1.5px solid #d1d5db', borderRadius: 8, padding: '6px 10px', fontSize: 14, minWidth: 100, fontFamily: 'inherit' }} />
+                                  <input type="number" value={editingItem.qty} onChange={e => setEditingItem({ ...editingItem, qty: e.target.value })} style={{ width: 56, border: '1.5px solid #d1d5db', borderRadius: 8, padding: '6px 10px', fontSize: 14, fontFamily: "'DM Mono',monospace" }} />
+                                  <input value={editingItem.unit} onChange={e => setEditingItem({ ...editingItem, unit: e.target.value })} placeholder="unit" style={{ width: 64, border: '1.5px solid #d1d5db', borderRadius: 8, padding: '6px 10px', fontSize: 14, fontFamily: 'inherit' }} />
+                                  <button onClick={() => saveEdit(item.id)} style={{ background: '#111827', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Save</button>
+                                  <button onClick={() => setEditingItem(null)} style={{ background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+                                </div>
+                              ) : (
+                                <div style={{ padding: '11px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}
+                                  onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+                                  onMouseLeave={e => e.currentTarget.style.background = ''}>
+                                  <button onClick={() => toggleItem(item.id)} style={{ width: 22, height: 22, marginTop: 2, borderRadius: 6, border: item.checked ? 'none' : '2px solid #d1d5db', background: item.checked ? '#22c55e' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .15s' }}>
+                                    {item.checked && <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>✓</span>}
+                                  </button>
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                      <span style={{ fontSize: 15, fontWeight: 500, color: item.checked ? '#9ca3af' : '#111827', textDecoration: item.checked ? 'line-through' : 'none', transition: 'all .2s' }}>{item.name}</span>
+                                      {(item.qty > 0 || item.unit) && (
+                                        <span style={{ fontSize: 12, color: '#9ca3af', fontFamily: "'DM Mono',monospace" }}>{item.qty} {item.unit}</span>
+                                      )}
+                                    </div>
+                                    {crossInfo && !item.checked && (
+                                      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 5 }}>
+                                        {crossInfo.map((c, i) => (
+                                          <span key={i} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: c.checked ? '#f0fdf4' : '#fff7ed', color: c.checked ? '#16a34a' : '#c2410c', border: `1px solid ${c.checked ? '#bbf7d0' : '#fed7aa'}` }}>
+                                            {c.checked ? '✓' : '○'} {c.listName}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                                    <button onClick={() => setEditingItem({ ...item })} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#9ca3af', padding: '4px 6px', borderRadius: 6 }} title="Edit">✏️</button>
+                                    <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#fca5a5', padding: '4px 6px', borderRadius: 6 }} title="Remove">✕</button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {showAddItem ? (
+                        <div style={{ background: '#fff', borderRadius: 16, padding: 16, border: '1px solid #e5e7eb', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 12 }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Add Item</div>
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            <input autoFocus value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} onKeyDown={e => e.key === 'Enter' && addItem()} placeholder="Item name…" style={{ flex: 2, border: '1.5px solid #d1d5db', borderRadius: 10, padding: '9px 12px', fontSize: 14, outline: 'none', minWidth: 120, fontFamily: 'inherit' }} />
+                            <input type="number" value={newItem.qty} min={0} step="any" onChange={e => setNewItem({ ...newItem, qty: e.target.value === '' ? '' : Number(e.target.value) })} style={{ width: 60, border: '1.5px solid #d1d5db', borderRadius: 10, padding: '9px 10px', fontSize: 14, outline: 'none', fontFamily: "'DM Mono',monospace" }} />
+                            <input value={newItem.unit} onChange={e => setNewItem({ ...newItem, unit: e.target.value })} placeholder="unit" style={{ width: 70, border: '1.5px solid #d1d5db', borderRadius: 10, padding: '9px 10px', fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                            <button onClick={addItem} style={{ flex: 1, background: '#111827', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 0', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>Add Item</button>
+                            <button onClick={() => setShowAddItem(false)} style={{ flex: 1, background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, padding: '10px 0', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button onClick={() => setShowAddItem(true)} style={{ width: '100%', background: '#fff', color: '#374151', border: '1.5px dashed #d1d5db', borderRadius: 14, padding: '13px 0', fontWeight: 600, fontSize: 14, cursor: 'pointer', marginBottom: 12, fontFamily: 'inherit' }}>
+                          + Add Item
+                        </button>
+                      )}
+                    </>
+                  )}
+
+                  {/* ── CROSS-LIST TAB ── */}
+                  {activeTab === 'missing' && crossData && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div style={{ background: '#fff', borderRadius: 14, padding: '14px 18px', border: '1px solid #e5e7eb', fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
+                        <div style={{ fontWeight: 700, marginBottom: 6, color: '#111827' }}>🔍 How this works</div>
+                        Scans your unchecked items and compares them across all lists by name. Each unchecked item is classified into one of three groups.
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a' }}>○ Still needed elsewhere</span>
+                          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, color: '#166534', background: '#f0fdf4', border: '1px solid #bbf7d0' }}>✓ Done in all others</span>
+                          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, color: '#1e40af', background: '#eff6ff', border: '1px solid #bfdbfe' }}>Only in this list</span>
+                        </div>
+                      </div>
+
+                      <Section title="⚠️ Also needed in other lists" subtitle="Still unchecked in at least one other list — you still need to buy these." color="#b45309" bg="#fffbeb" border="#fde68a" count={crossData.neededElsewhere.length} expanded={missingExpanded.neededElsewhere} onToggle={() => setMissingExpanded(p => ({ ...p, neededElsewhere: !p.neededElsewhere }))}>
+                        {crossData.neededElsewhere.length === 0 ? <EmptyNote>No items in this category.</EmptyNote>
+                          : crossData.neededElsewhere.map(({ item, matchingOthers }) => <CrossItem key={item.id} item={item} matches={matchingOthers} onToggle={() => toggleItem(item.id)} />)}
+                      </Section>
+
+                      <Section title="✅ Already done in all other lists" subtitle="Checked off in every other list that has them — consider if you still need them here." color="#166534" bg="#f0fdf4" border="#bbf7d0" count={crossData.coveredElsewhere.length} expanded={missingExpanded.coveredElsewhere} onToggle={() => setMissingExpanded(p => ({ ...p, coveredElsewhere: !p.coveredElsewhere }))}>
+                        {crossData.coveredElsewhere.length === 0 ? <EmptyNote>No items in this category.</EmptyNote>
+                          : crossData.coveredElsewhere.map(({ item, matchingOthers }) => <CrossItem key={item.id} item={item} matches={matchingOthers} onToggle={() => toggleItem(item.id)} />)}
+                      </Section>
+
+                      <Section title="🔵 Unique to this list" subtitle="These unchecked items don't appear in any other list." color="#1e40af" bg="#eff6ff" border="#bfdbfe" count={crossData.uniqueToThis.length} expanded={missingExpanded.uniqueToThis} onToggle={() => setMissingExpanded(p => ({ ...p, uniqueToThis: !p.uniqueToThis }))}>
+                        {crossData.uniqueToThis.length === 0 ? <EmptyNote>No items in this category.</EmptyNote>
+                          : crossData.uniqueToThis.map(({ item }) => <CrossItem key={item.id} item={item} matches={[]} onToggle={() => toggleItem(item.id)} />)}
+                      </Section>
+
+                      <div style={{ background: '#111827', borderRadius: 14, padding: '16px 20px', color: '#fff' }}>
+                        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 10 }}>📊 Summary for "{activeList.name}"</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, textAlign: 'center' }}>
+                          {[
+                            { label: 'Also needed elsewhere', val: crossData.neededElsewhere.length, color: '#fbbf24' },
+                            { label: 'Done in all others',    val: crossData.coveredElsewhere.length, color: '#4ade80' },
+                            { label: 'Unique to this list',   val: crossData.uniqueToThis.length,    color: '#60a5fa' },
+                          ].map(({ label, val, color }) => (
+                            <div key={label} style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 10, padding: '10px 6px' }}>
+                              <div style={{ fontSize: 24, fontWeight: 700, color }}>{val}</div>
+                              <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 3 }}>{label}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </>
               )}
-
-              {/* ── CROSS-LIST TAB ── */}
-              {activeTab === 'missing' && crossData && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div style={{ background: '#fff', borderRadius: 14, padding: '14px 18px', border: '1px solid #e5e7eb', fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
-                    <div style={{ fontWeight: 700, marginBottom: 6, color: '#111827' }}>🔍 How this works</div>
-                    Scans your unchecked items and compares them across all lists by name. Each unchecked item is classified into one of three groups.
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a' }}>○ Still needed elsewhere</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, color: '#166534', background: '#f0fdf4', border: '1px solid #bbf7d0' }}>✓ Done in all others</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, color: '#1e40af', background: '#eff6ff', border: '1px solid #bfdbfe' }}>Only in this list</span>
-                    </div>
-                  </div>
-
-                  <Section title="⚠️ Also needed in other lists" subtitle="Still unchecked in at least one other list — you still need to buy these." color="#b45309" bg="#fffbeb" border="#fde68a" count={crossData.neededElsewhere.length} expanded={missingExpanded.neededElsewhere} onToggle={() => setMissingExpanded(p => ({ ...p, neededElsewhere: !p.neededElsewhere }))}>
-                    {crossData.neededElsewhere.length === 0 ? <EmptyNote>No items in this category.</EmptyNote>
-                      : crossData.neededElsewhere.map(({ item, matchingOthers }) => <CrossItem key={item.id} item={item} matches={matchingOthers} onToggle={() => toggleItem(item.id)} />)}
-                  </Section>
-
-                  <Section title="✅ Already done in all other lists" subtitle="Checked off in every other list that has them — consider if you still need them here." color="#166534" bg="#f0fdf4" border="#bbf7d0" count={crossData.coveredElsewhere.length} expanded={missingExpanded.coveredElsewhere} onToggle={() => setMissingExpanded(p => ({ ...p, coveredElsewhere: !p.coveredElsewhere }))}>
-                    {crossData.coveredElsewhere.length === 0 ? <EmptyNote>No items in this category.</EmptyNote>
-                      : crossData.coveredElsewhere.map(({ item, matchingOthers }) => <CrossItem key={item.id} item={item} matches={matchingOthers} onToggle={() => toggleItem(item.id)} />)}
-                  </Section>
-
-                  <Section title="🔵 Unique to this list" subtitle="These unchecked items don't appear in any other list." color="#1e40af" bg="#eff6ff" border="#bfdbfe" count={crossData.uniqueToThis.length} expanded={missingExpanded.uniqueToThis} onToggle={() => setMissingExpanded(p => ({ ...p, uniqueToThis: !p.uniqueToThis }))}>
-                    {crossData.uniqueToThis.length === 0 ? <EmptyNote>No items in this category.</EmptyNote>
-                      : crossData.uniqueToThis.map(({ item }) => <CrossItem key={item.id} item={item} matches={[]} onToggle={() => toggleItem(item.id)} />)}
-                  </Section>
-
-                  <div style={{ background: '#111827', borderRadius: 14, padding: '16px 20px', color: '#fff' }}>
-                    <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 10 }}>📊 Summary for "{activeList.name}"</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, textAlign: 'center' }}>
-                      {[
-                        { label: 'Also needed elsewhere', val: crossData.neededElsewhere.length, color: '#fbbf24' },
-                        { label: 'Done in all others',    val: crossData.coveredElsewhere.length, color: '#4ade80' },
-                        { label: 'Unique to this list',   val: crossData.uniqueToThis.length,    color: '#60a5fa' },
-                      ].map(({ label, val, color }) => (
-                        <div key={label} style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 10, padding: '10px 6px' }}>
-                          <div style={{ fontSize: 24, fontWeight: 700, color }}>{val}</div>
-                          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 3 }}>{label}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
             </>
+          )}
+
+          {ctxLoading && (
+            <div style={{ textAlign: 'center', marginTop: 80, color: '#9ca3af' }}>
+              <div style={{ fontSize: 14 }}>Loading…</div>
+            </div>
           )}
         </main>
       </div>

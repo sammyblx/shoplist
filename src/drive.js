@@ -6,10 +6,10 @@ const SCOPES = [
 ].join(' ');
 
 const FOLDER_NAME = 'ShopList';
-const FILE_NAME   = 'shoplist.json';
-const LS_KEY      = 'shoplist_file_id';
-const DRIVE       = 'https://www.googleapis.com/drive/v3/files';
-const UPLOAD      = 'https://www.googleapis.com/upload/drive/v3/files';
+const LS_PERSONAL = 'shoplist_personal_id';
+const LS_GROUPS   = 'shoplist_groups';
+const DRIVE  = 'https://www.googleapis.com/drive/v3/files';
+const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
 
 let _client      = null;
 let _token       = null;
@@ -26,7 +26,6 @@ function waitForGoogle() {
   });
 }
 
-/** Call once on app start. Resolves when the GIS library is ready. */
 export async function init() {
   await waitForGoogle();
   _client = window.google.accounts.oauth2.initTokenClient({
@@ -50,10 +49,8 @@ function requestToken(prompt) {
   });
 }
 
-/** Opens the Google account chooser. Call on user-initiated sign-in. */
 export const signIn = () => requestToken('select_account');
 
-/** Revokes the token. Does NOT clear the saved file ID so the user rejoins automatically. */
 export function signOut() {
   if (_token) window.google.accounts.oauth2.revoke(_token, () => {});
   _token = null;
@@ -69,24 +66,13 @@ async function authHeaders(extra = {}) {
   return { Authorization: `Bearer ${await getToken()}`, ...extra };
 }
 
-// ── Join code helpers ─────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Returns the saved Drive file ID, or null. */
-export function getSavedFileId() {
-  return localStorage.getItem(LS_KEY) || null;
-}
-
-/** The short human-readable code — first 8 chars of the file ID. */
 export function getShortCode(fileId) {
   return (fileId || '').substring(0, 8).toUpperCase();
 }
 
-/** Remove the saved file ID (user leaves the family list). */
-export function clearSavedFileId() {
-  localStorage.removeItem(LS_KEY);
-}
-
-// ── Drive folder + file management ───────────────────────────────────────────
+// ── Drive folder ──────────────────────────────────────────────────────────────
 
 async function findOrCreateFolder() {
   const h = await authHeaders();
@@ -107,70 +93,26 @@ async function findOrCreateFolder() {
   return (await cr.json()).id;
 }
 
-/**
- * Creates a new ShopList folder + shoplist.json, sets anyone-can-write
- * permission, saves file ID to localStorage.
- * Returns { fileId, data }.
- */
-export async function createFamilyFile() {
+async function createDriveFile(fileName, initialData) {
   const folderId = await findOrCreateFolder();
   const h = await authHeaders();
-
-  const meta = { name: FILE_NAME, parents: [folderId] };
+  const meta = { name: fileName, parents: [folderId] };
   const form = new FormData();
   form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
-  form.append('file',     new Blob([JSON.stringify({ lists: [] })], { type: 'application/json' }));
-
+  form.append('file',     new Blob([JSON.stringify(initialData)], { type: 'application/json' }));
   const r = await fetch(`${UPLOAD}?uploadType=multipart`, { method: 'POST', headers: h, body: form });
   if (!r.ok) throw new Error(`File create failed: ${r.status}`);
-  const { id: fileId } = await r.json();
-
-  // Allow anyone with the link to edit — required for family sharing
-  const pr = await fetch(`${DRIVE}/${fileId}/permissions`, {
-    method: 'POST',
-    headers: { ...h, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ role: 'writer', type: 'anyone' }),
-  });
-  if (!pr.ok) throw new Error(`Permission set failed: ${pr.status}`);
-
-  localStorage.setItem(LS_KEY, fileId);
-  return { fileId, data: { lists: [] } };
+  return (await r.json()).id;
 }
 
-/**
- * Joins an existing family file by ID. Validates access, saves file ID
- * to localStorage. Returns the current data.
- */
-export async function joinFamily(fileId) {
-  if (!fileId?.trim()) throw new Error('Enter a join code.');
-  const id = fileId.trim();
-  const h = await authHeaders();
-  const r = await fetch(`${DRIVE}/${id}?alt=media`, { headers: h });
-  if (r.status === 404) throw new Error('File not found. Check the join code.');
-  if (r.status === 403) throw new Error('Access denied. Make sure the code is correct and the list owner has shared it.');
-  if (!r.ok) throw new Error(`Cannot access file (${r.status}).`);
-  let data;
-  try { data = await r.json(); } catch { data = { lists: [] }; }
-  localStorage.setItem(LS_KEY, id);
-  return data;
-}
-
-// ── Data I/O ──────────────────────────────────────────────────────────────────
-
-/** Loads data from the file ID stored in localStorage. */
-export async function loadData() {
-  const fileId = getSavedFileId();
-  if (!fileId) throw new Error('No file ID saved.');
+async function readDriveFile(fileId) {
   const h = await authHeaders();
   const r = await fetch(`${DRIVE}/${fileId}?alt=media`, { headers: h });
   if (!r.ok) return { lists: [] };
   try { return await r.json(); } catch { return { lists: [] }; }
 }
 
-/** Saves data to the file ID stored in localStorage. */
-export async function saveData(data) {
-  const fileId = getSavedFileId();
-  if (!fileId) throw new Error('No file ID saved.');
+async function writeDriveFile(fileId, data) {
   const h = await authHeaders();
   const r = await fetch(`${UPLOAD}/${fileId}?uploadType=media`, {
     method: 'PATCH',
@@ -180,7 +122,87 @@ export async function saveData(data) {
   if (!r.ok) throw new Error(`Save failed: ${r.status}`);
 }
 
-/** Returns basic profile info: { name, email, picture }. */
+// ── Personal file (private, no sharing) ──────────────────────────────────────
+
+export function getPersonalFileId() {
+  return localStorage.getItem(LS_PERSONAL) || null;
+}
+
+export async function ensurePersonalFile() {
+  let id = getPersonalFileId();
+  if (id) return id;
+  id = await createDriveFile('personal.json', { lists: [] });
+  localStorage.setItem(LS_PERSONAL, id);
+  return id;
+}
+
+export async function loadPersonalData() {
+  const id = getPersonalFileId();
+  if (!id) return { lists: [] };
+  return readDriveFile(id);
+}
+
+export async function savePersonalData(data) {
+  const id = getPersonalFileId();
+  if (!id) throw new Error('No personal file.');
+  await writeDriveFile(id, data);
+}
+
+// ── Shared groups (anyone:writer via file ID) ─────────────────────────────────
+
+/** Returns [{name, fileId}] from localStorage. */
+export function getStoredGroups() {
+  try { return JSON.parse(localStorage.getItem(LS_GROUPS) || '[]'); } catch { return []; }
+}
+
+/** Persists the groups array to localStorage. */
+export function persistGroups(groups) {
+  localStorage.setItem(LS_GROUPS, JSON.stringify(groups));
+}
+
+/**
+ * Creates a new shared group file with anyone:writer permission.
+ * Returns { name, fileId }.
+ */
+export async function createGroup(name) {
+  const safe = name.trim().replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  const fileName = `shared-${safe}-${Date.now()}.json`;
+  const fileId = await createDriveFile(fileName, { lists: [] });
+  const h = await authHeaders();
+  const pr = await fetch(`${DRIVE}/${fileId}/permissions`, {
+    method: 'POST',
+    headers: { ...h, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role: 'writer', type: 'anyone' }),
+  });
+  if (!pr.ok) throw new Error(`Permission set failed: ${pr.status}`);
+  return { name: name.trim(), fileId };
+}
+
+/**
+ * Validates access to an existing shared group file.
+ * Returns the file's data on success.
+ */
+export async function joinGroup(fileId) {
+  if (!fileId?.trim()) throw new Error('Enter a join code.');
+  const id = fileId.trim();
+  const h = await authHeaders();
+  const r = await fetch(`${DRIVE}/${id}?alt=media`, { headers: h });
+  if (r.status === 404) throw new Error('File not found. Check the join code.');
+  if (r.status === 403) throw new Error('Access denied. Make sure the code is correct.');
+  if (!r.ok) throw new Error(`Cannot access file (${r.status}).`);
+  try { return await r.json(); } catch { return { lists: [] }; }
+}
+
+export async function loadGroupData(fileId) {
+  return readDriveFile(fileId);
+}
+
+export async function saveGroupData(fileId, data) {
+  await writeDriveFile(fileId, data);
+}
+
+// ── User info ─────────────────────────────────────────────────────────────────
+
 export async function getUserInfo() {
   const h = await authHeaders();
   const r = await fetch('https://www.googleapis.com/oauth2/v1/userinfo', { headers: h });
